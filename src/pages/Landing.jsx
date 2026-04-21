@@ -34,44 +34,48 @@ export default function Landing() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const heroEl = heroRef.current;
+    let onMove = null;
 
     const ctx = gsap.context(() => {
-      gsap.from("[data-hero-item]", {
-        y: 36,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.12,
-        ease: "power3.out",
-      });
-
-      gsap.utils.toArray("[data-reveal]").forEach((el) => {
-        gsap.from(el, {
+      if (!prefersReducedMotion) {
+        gsap.from("[data-hero-item]", {
+          y: 36,
           opacity: 0,
-          y: 38,
           duration: 0.8,
+          stagger: 0.12,
           ease: "power3.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 82%",
-            toggleActions: "play none none none",
-          },
         });
-      });
 
-      gsap.to(orbRef.current, {
-        y: -10,
-        rotateY: 8,
-        rotateX: -5,
-        repeat: -1,
-        yoyo: true,
-        duration: 2.8,
-        ease: "sine.inOut",
-      });
+        gsap.utils.toArray("[data-reveal]").forEach((el) => {
+          gsap.from(el, {
+            opacity: 0,
+            y: 38,
+            duration: 0.8,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 82%",
+              toggleActions: "play none none none",
+            },
+          });
+        });
+
+        gsap.to(orbRef.current, {
+          y: -10,
+          rotateY: 8,
+          rotateX: -5,
+          repeat: -1,
+          yoyo: true,
+          duration: 2.8,
+          ease: "sine.inOut",
+        });
+      }
     }, root);
 
-    const heroEl = heroRef.current;
-    if (heroEl && orbRef.current) {
-      const onMove = (event) => {
+    if (!prefersReducedMotion && heroEl && orbRef.current) {
+      onMove = (event) => {
         const rect = heroEl.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width - 0.5;
         const y = (event.clientY - rect.top) / rect.height - 0.5;
@@ -86,14 +90,12 @@ export default function Landing() {
       };
 
       heroEl.addEventListener("mousemove", onMove);
-      return () => {
-        heroEl.removeEventListener("mousemove", onMove);
-        ctx.revert();
-        ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      };
     }
 
     return () => {
+      if (heroEl && onMove) {
+        heroEl.removeEventListener("mousemove", onMove);
+      }
       ctx.revert();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
@@ -103,14 +105,14 @@ export default function Landing() {
     <div ref={rootRef} className="min-h-screen bg-white">
       <Nav />
       <main>
-        <section ref={heroRef} className="relative min-h-screen overflow-hidden px-6 pb-16 pt-30 md:px-10">
+        <section ref={heroRef} className="relative min-h-screen overflow-hidden px-6 pb-16 pt-28 md:px-10">
           <div aria-hidden className="grid-dots absolute inset-0" />
           <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
             <div>
-              <h1 data-hero-item className="font-display text-4xl font-extrabold leading-[0.95] text-[#0f172a] md:text-6xl xl:text-8xl">
+              <h1 data-hero-item className="font-display text-4xl font-extrabold leading-[1.05] text-[var(--fg)] md:text-6xl xl:text-8xl">
                 A unique SaaS waitlist that looks built, not generated.
               </h1>
-              <p data-hero-item className="mt-6 max-w-xl text-base font-medium leading-7 text-[#0f172a]">
+              <p data-hero-item className="mt-6 max-w-xl text-base font-medium leading-7 text-[var(--fg)]">
                 Modern structure, restrained color, premium spacing, and a conversion-first flow for your launch.
               </p>
               <div data-hero-item className="mt-8 flex flex-wrap items-center gap-3">
@@ -127,7 +129,7 @@ export default function Landing() {
             <div ref={orbRef} className="panel relative mx-auto w-full max-w-[480px] p-5" style={{ transformStyle: "preserve-3d" }}>
               <div className="mb-4 flex items-center justify-between rounded-xl border border-[#dbe4f3] bg-white px-4 py-3">
                 <span className="text-sm font-bold text-[#0f172a]">Waitlist Snapshot</span>
-                <span className="text-xs font-bold text-[#1d4ed8]">Early Access</span>
+                <span className="text-xs font-bold text-[var(--accent)]">Early Access</span>
               </div>
               <div className="space-y-3">
                 {features.map((item) => (
@@ -137,7 +139,7 @@ export default function Landing() {
                 ))}
               </div>
               <div className="mt-4 aspect-[4/3] rounded-xl border border-dashed border-[#dbe4f3] bg-[#f8fbff] p-4 text-center text-sm font-semibold text-[#0f172a]">
-                3D visual placeholder
+                3D artwork placeholder
               </div>
             </div>
           </div>

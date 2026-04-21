@@ -20,53 +20,59 @@ export default function Join() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const ctx = gsap.context(() => {
-      gsap.from("[data-join-hero]", {
-        y: 28,
-        opacity: 0,
-        duration: 0.75,
-        ease: "power3.out",
-        stagger: 0.12,
-      });
+      if (!prefersReducedMotion) {
+        gsap.from("[data-join-hero]", {
+          y: 28,
+          opacity: 0,
+          duration: 0.75,
+          ease: "power3.out",
+          stagger: 0.12,
+        });
 
-      gsap.from("[data-join-panel]", {
-        y: 30,
-        opacity: 0,
-        duration: 0.85,
-        delay: 0.2,
-        ease: "power3.out",
-      });
+        gsap.from("[data-join-panel]", {
+          y: 30,
+          opacity: 0,
+          duration: 0.85,
+          delay: 0.2,
+          ease: "power3.out",
+        });
+      }
     }, root);
 
     const panel = formPanelRef.current;
-    if (!panel) {
-      return () => ctx.revert();
+    let onMove = null;
+    let reset = null;
+
+    if (!prefersReducedMotion && panel) {
+      onMove = (event) => {
+        const rect = panel.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+        gsap.to(panel, {
+          rotateY: x * 8,
+          rotateX: -y * 8,
+          duration: 0.35,
+          transformPerspective: 800,
+          transformOrigin: "center",
+        });
+      };
+
+      reset = () => {
+        gsap.to(panel, { rotateX: 0, rotateY: 0, duration: 0.35 });
+      };
+
+      panel.addEventListener("mousemove", onMove);
+      panel.addEventListener("mouseleave", reset);
     }
 
-    const onMove = (event) => {
-      const rect = panel.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
-      gsap.to(panel, {
-        rotateY: x * 8,
-        rotateX: -y * 8,
-        duration: 0.35,
-        transformPerspective: 800,
-        transformOrigin: "center",
-      });
-    };
-
-    const reset = () => {
-      gsap.to(panel, { rotateX: 0, rotateY: 0, duration: 0.35 });
-    };
-
-    panel.addEventListener("mousemove", onMove);
-    panel.addEventListener("mouseleave", reset);
-
     return () => {
-      panel.removeEventListener("mousemove", onMove);
-      panel.removeEventListener("mouseleave", reset);
+      if (panel && onMove && reset) {
+        panel.removeEventListener("mousemove", onMove);
+        panel.removeEventListener("mouseleave", reset);
+      }
       ctx.revert();
     };
   }, []);
@@ -85,7 +91,8 @@ export default function Join() {
       const res = await addToWaitlist({ email: clean, role, source: "join-page" });
       setDuplicate(Boolean(res.duplicate));
       setState("success");
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Something went wrong on our end. Please try again.");
       setState("idle");
     }
@@ -94,10 +101,10 @@ export default function Join() {
   return (
     <div ref={rootRef} className="min-h-screen bg-white">
       <Nav />
-      <main className="px-6 pb-20 pt-30 md:px-10 md:pb-28">
+      <main className="px-6 pb-20 pt-28 md:px-10 md:pb-28">
         <div className="mx-auto w-full max-w-4xl">
           <p data-join-hero className="text-xs font-bold tracking-[0.2em] text-[#1d4ed8]">EARLY ACCESS</p>
-          <h1 data-join-hero className="font-display mt-3 text-4xl font-extrabold leading-[0.95] text-[#0f172a] md:text-6xl">
+          <h1 data-join-hero className="font-display mt-3 text-4xl font-extrabold leading-[0.95] text-[var(--fg)] md:text-6xl">
             Join the waitlist and launch with a polished first impression.
           </h1>
           <p data-join-hero className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-[#0f172a]">

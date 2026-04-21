@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mail, Globe, ArrowUpRight } from "lucide-react";
+import { Mail, Globe, GitFork } from "lucide-react";
 import Logo from "./Logo.jsx";
 
 export default function Footer() {
@@ -16,14 +16,30 @@ export default function Footer() {
           <a href="mailto:hello@sitekraft.app">hello@sitekraft.app</a>
         </div>
         <div className="flex items-center gap-3 md:justify-end">
-          <a href="mailto:hello@sitekraft.app" className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white">
+          <a
+            href="mailto:hello@sitekraft.app"
+            aria-label="Email Sitekraft"
+            className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white"
+          >
             <Mail size={16} />
           </a>
-          <a href="#" className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white">
+          <a
+            href="https://sitekraft.app"
+            aria-label="Visit Sitekraft website"
+            target="_blank"
+            rel="noreferrer"
+            className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white"
+          >
             <Globe size={16} />
           </a>
-          <a href="#" className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white">
-            <ArrowUpRight size={16} />
+          <a
+            href="https://github.com/robinfs8"
+            aria-label="Visit GitHub profile"
+            target="_blank"
+            rel="noreferrer"
+            className="grid h-9 w-9 place-items-center rounded-full border border-[#dbe4f3] bg-white"
+          >
+            <GitFork size={16} />
           </a>
         </div>
       </div>

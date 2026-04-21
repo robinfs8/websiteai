@@ -44,7 +44,7 @@ export default function Nav() {
               key={link.label}
               to={link.to}
               onClick={() => setOpen(false)}
-              className="rounded-full px-3 py-2 text-sm font-semibold text-[#0f172a] transition hover:bg-[#f2f6ff]"
+              className="rounded-full px-3 py-2 text-sm font-semibold text-[var(--fg)] transition hover:bg-[var(--bg-soft)]"
             >
               {link.label}
             </Link>
