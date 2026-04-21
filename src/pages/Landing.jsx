@@ -1,371 +1,210 @@
-import React from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import {
-  ArrowUpRight,
-  Sparkles,
-  Wand2,
-  LayoutDashboard,
-  Rocket,
-  Globe,
-  Zap,
-  Shield,
-} from "lucide-react";
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Nav from "../components/Nav.jsx";
 import Footer from "../components/Footer.jsx";
 
-const ease = [0.22, 1, 0.36, 1];
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease, delay: i * 0.05 },
-  }),
-};
-
-const steps = [
-  {
-    n: "01",
-    icon: Wand2,
-    title: "Describe your site",
-    body: "One sentence is enough. A bakery, a studio, a SaaS landing — name it.",
-  },
-  {
-    n: "02",
-    icon: LayoutDashboard,
-    title: "We design & write it",
-    body: "Layout, copy, typography, and structure — considered, not templated.",
-  },
-  {
-    n: "03",
-    icon: Rocket,
-    title: "Ship a real website",
-    body: "Production React, deployed to a live URL. Yours to keep, edit, and grow.",
-  },
-];
+gsap.registerPlugin(ScrollTrigger);
 
 const features = [
-  {
-    icon: Sparkles,
-    title: "AI that designs, not just writes",
-    body: "Every section is composed with hierarchy, rhythm, and real typographic care.",
-  },
-  {
-    icon: Globe,
-    title: "Production, not a mockup",
-    body: "Ships as real React — deployed, indexed, fast. No screenshots, no Figma.",
-  },
-  {
-    icon: Zap,
-    title: "Minutes, not months",
-    body: "From sentence to live URL in a single flow. Iterate in natural language.",
-  },
-  {
-    icon: Shield,
-    title: "Yours to keep",
-    body: "Full code ownership, clean components, no platform lock-in.",
-  },
+  "Sharp layout rhythm without template feel",
+  "Fast waitlist capture with zero clutter",
+  "Accessible contrast and clear hierarchy",
+];
+
+const steps = [
+  { title: "Define your angle", text: "Share the offer and audience in one line." },
+  { title: "Shape the page", text: "We craft the structure and visual language." },
+  { title: "Launch waitlist", text: "Collect early interest with a clean conversion flow." },
+];
+
+const faqs = [
+  { q: "Can I edit the content later?", a: "Yes. The layout is component based, so copy updates stay simple." },
+  { q: "Is this only for SaaS?", a: "No. It works for any business that needs a premium waitlist page." },
+  { q: "Will the page stay lightweight?", a: "Yes. The design keeps a restrained palette and fast rendering." },
 ];
 
 export default function Landing() {
+  const rootRef = useRef(null);
+  const heroRef = useRef(null);
+  const orbRef = useRef(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from("[data-hero-item]", {
+        y: 36,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.12,
+        ease: "power3.out",
+      });
+
+      gsap.utils.toArray("[data-reveal]").forEach((el) => {
+        gsap.from(el, {
+          opacity: 0,
+          y: 38,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: el,
+            start: "top 82%",
+            toggleActions: "play none none none",
+          },
+        });
+      });
+
+      gsap.to(orbRef.current, {
+        y: -10,
+        rotateY: 8,
+        rotateX: -5,
+        repeat: -1,
+        yoyo: true,
+        duration: 2.8,
+        ease: "sine.inOut",
+      });
+    }, root);
+
+    const heroEl = heroRef.current;
+    if (heroEl && orbRef.current) {
+      const onMove = (event) => {
+        const rect = heroEl.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+        gsap.to(orbRef.current, {
+          rotateY: x * 18,
+          rotateX: -y * 18,
+          x: x * 16,
+          y: y * 10,
+          duration: 0.45,
+          overwrite: true,
+        });
+      };
+
+      heroEl.addEventListener("mousemove", onMove);
+      return () => {
+        heroEl.removeEventListener("mousemove", onMove);
+        ctx.revert();
+        ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      };
+    }
+
+    return () => {
+      ctx.revert();
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div ref={rootRef} className="min-h-screen bg-white">
       <Nav />
-
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="relative pt-10 md:pt-16 pb-20 md:pb-28">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 dot-grid opacity-70"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 h-[420px] w-[720px] brand-glow"
-          />
-
-          <div className="relative max-w-5xl mx-auto px-6 md:px-10">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
-              className="mx-auto max-w-3xl text-center"
-            >
-              <motion.div variants={fadeUp} className="mb-7 flex justify-center">
-                <span className="chip">
-                  <span className="chip-dot" />
-                  Private beta — AI website builder
-                </span>
-              </motion.div>
-
-              <motion.h1
-                variants={fadeUp}
-                className="font-display text-[44px] md:text-[76px] leading-[1.02] tracking-[-0.032em] text-[var(--fg)]"
-              >
-                <span className="glass-text">Ship a landing page</span>
-                <br className="hidden sm:block" />
-                <span className="glass-text-brand">by describing it.</span>
-              </motion.h1>
-
-              <motion.p
-                variants={fadeUp}
-                className="mx-auto mt-6 max-w-xl text-[16.5px] md:text-[17.5px] leading-[1.6] text-[var(--fg-2)]"
-              >
-                Sitekraft turns a sentence into a real, multi-page website — copy,
-                design, and production code, deployed for you. Built for founders
-                shipping landing pages, fast.
-              </motion.p>
-
-              <motion.div
-                variants={fadeUp}
-                className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
-              >
-                <Link to="/join" className="glass-btn group">
-                  Join the waitlist
-                  <ArrowUpRight
-                    size={15}
-                    className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </Link>
-                <a href="#how" className="glass-btn-ghost">
-                  How it works
-                </a>
-              </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                className="mt-10 flex items-center justify-center gap-5 text-[12.5px] text-[var(--fg-3)]"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  1,200+ on waitlist
-                </span>
-                <span className="h-3 w-px bg-[var(--border)]" />
-                <span>No credit card. One email, one time.</span>
-              </motion.div>
-            </motion.div>
-
-            {/* Preview panel */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease, delay: 0.25 }}
-              className="relative mx-auto mt-16 max-w-4xl"
-            >
-              <div className="glass-card overflow-hidden p-1.5">
-                <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
-                  <span className="ml-3 flex-1 truncate rounded-md bg-white/70 px-2.5 py-1 text-[11px] text-[var(--fg-3)] border border-[var(--border)]">
-                    sitekraft.app/preview/bakery
-                  </span>
-                </div>
-                <div className="relative overflow-hidden rounded-[14px] border border-[var(--border)] bg-gradient-to-b from-white to-[#F7F9FC]">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
-                    <div className="flex items-center gap-2">
-                      <div className="h-5 w-5 rounded-md bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8]" />
-                      <span className="text-[13px] font-medium">Flourish Bakery</span>
-                    </div>
-                    <div className="hidden sm:flex gap-4 text-[12px] text-[var(--fg-2)]">
-                      <span>Menu</span>
-                      <span>Story</span>
-                      <span>Visit</span>
-                    </div>
-                    <span className="glass-btn text-[11.5px] py-1.5 px-3">Order</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 py-10">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-widest text-[var(--fg-3)] mb-3">
-                        Since 1998
-                      </div>
-                      <div className="font-display text-[28px] md:text-[36px] leading-[1.05] tracking-[-0.025em]">
-                        <span className="glass-text">Sourdough, slow-proofed,</span>
-                        <br />
-                        <span className="glass-text-brand">baked at dawn.</span>
-                      </div>
-                      <div className="mt-4 text-[13px] text-[var(--fg-2)] max-w-[32ch]">
-                        A family-run bakery on Commerce Street. Open Tue–Sun.
-                      </div>
-                      <div className="mt-5 flex gap-2">
-                        <span className="glass-btn text-[11.5px] py-1.5 px-3">Reserve</span>
-                        <span className="glass-btn-ghost text-[11.5px] py-1.5 px-3">Menu</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="h-28 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200/60" />
-                      <div className="h-28 rounded-xl bg-gradient-to-br from-orange-100 to-rose-50 border border-rose-200/60" />
-                      <div className="h-28 rounded-xl bg-gradient-to-br from-stone-100 to-neutral-50 border border-neutral-200/60 col-span-2" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Feature bento */}
-        <section className="relative">
-          <div className="max-w-5xl mx-auto px-6 md:px-10 py-16 md:py-24">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease }}
-              className="max-w-2xl"
-            >
-              <span className="chip mb-4">
-                <Sparkles size={12} className="text-[var(--accent)]" />
-                Why Sitekraft
-              </span>
-              <h2 className="font-display text-[30px] md:text-[44px] leading-[1.08] tracking-[-0.028em]">
-                <span className="glass-text">Designed, not generated.</span>
-              </h2>
-              <p className="mt-4 text-[15.5px] leading-[1.65] text-[var(--fg-2)] max-w-[52ch]">
-                Most AI site builders ship flat templates. Sitekraft composes each
-                section with considered typography, rhythm, and real structure.
+      <main>
+        <section ref={heroRef} className="relative min-h-screen overflow-hidden px-6 pb-16 pt-30 md:px-10">
+          <div aria-hidden className="grid-dots absolute inset-0" />
+          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-2">
+            <div>
+              <h1 data-hero-item className="font-display text-4xl font-extrabold leading-[0.95] text-[#0f172a] md:text-6xl xl:text-8xl">
+                A unique SaaS waitlist that looks built, not generated.
+              </h1>
+              <p data-hero-item className="mt-6 max-w-xl text-base font-medium leading-7 text-[#0f172a]">
+                Modern structure, restrained color, premium spacing, and a conversion-first flow for your launch.
               </p>
-            </motion.div>
-
-            <div className="mt-10 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-              {features.map((f, i) => {
-                const Icon = f.icon;
-                return (
-                  <motion.div
-                    key={f.title}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-60px" }}
-                    transition={{ duration: 0.6, ease, delay: i * 0.06 }}
-                    className="glass-card p-6 md:p-7"
-                  >
-                    <div
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0.06) 100%)",
-                        border: "1px solid rgba(37,99,235,0.2)",
-                        boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset",
-                      }}
-                    >
-                      <Icon size={18} className="text-[var(--accent)]" />
-                    </div>
-                    <h3 className="mt-4 font-display text-[18px] md:text-[19px] leading-[1.25] tracking-[-0.015em] text-[var(--fg)]">
-                      {f.title}
-                    </h3>
-                    <p className="mt-2 text-[14px] leading-[1.6] text-[var(--fg-2)] max-w-[36ch]">
-                      {f.body}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section id="how" className="relative">
-          <div className="max-w-5xl mx-auto px-6 md:px-10 py-16 md:py-24">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease }}
-            >
-              <span className="chip mb-4">
-                <LayoutDashboard size={12} className="text-[var(--accent)]" />
-                Three steps
-              </span>
-              <h2 className="font-display text-[30px] md:text-[44px] leading-[1.08] tracking-[-0.028em]">
-                <span className="glass-text">From sentence to site.</span>
-              </h2>
-            </motion.div>
-
-            <div className="mt-10 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-              {steps.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <motion.div
-                    key={s.n}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-60px" }}
-                    transition={{ duration: 0.6, ease, delay: i * 0.08 }}
-                    className="glass-card p-6 md:p-7 relative"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
-                        style={{
-                          background:
-                            "linear-gradient(180deg, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0.06) 100%)",
-                          border: "1px solid rgba(37,99,235,0.2)",
-                          boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset",
-                        }}
-                      >
-                        <Icon size={18} className="text-[var(--accent)]" />
-                      </div>
-                      <span className="text-[11px] tracking-[0.16em] uppercase text-[var(--fg-3)]">
-                        {s.n}
-                      </span>
-                    </div>
-                    <h3 className="mt-5 font-display text-[19px] md:text-[21px] leading-[1.2] tracking-[-0.015em] text-[var(--fg)]">
-                      {s.title}
-                    </h3>
-                    <p className="mt-2 text-[14px] leading-[1.65] text-[var(--fg-2)] max-w-[30ch]">
-                      {s.body}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="relative">
-          <div className="max-w-5xl mx-auto px-6 md:px-10 pb-24 md:pb-32">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.8, ease }}
-              className="relative glass-card overflow-hidden px-7 md:px-14 py-14 md:py-20 text-center"
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-70"
-                style={{
-                  background:
-                    "radial-gradient(60% 80% at 50% 0%, rgba(37,99,235,0.14) 0%, transparent 70%)",
-                }}
-              />
-              <div className="relative">
-                <h2 className="font-display text-[30px] md:text-[48px] leading-[1.05] tracking-[-0.028em]">
-                  <span className="glass-text">A quieter way to</span>{" "}
-                  <span className="glass-text-brand">ship a real site.</span>
-                </h2>
-                <p className="mx-auto mt-5 max-w-[52ch] text-[15.5px] leading-[1.65] text-[var(--fg-2)]">
-                  We're onboarding makers slowly. Leave your email and we'll send a
-                  single note — the day the door opens.
-                </p>
-                <div className="mt-8 flex items-center justify-center gap-3">
-                  <Link to="/join" className="glass-btn group">
-                    Get notified
-                    <ArrowUpRight
-                      size={15}
-                      className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    />
-                  </Link>
-                </div>
+              <div data-hero-item className="mt-8 flex flex-wrap items-center gap-3">
+                <Link to="/join" className="liquid-btn liquid-btn-primary">
+                  Join the Waitlist
+                  <ArrowUpRight size={14} />
+                </Link>
+                <a href="#flow" className="liquid-btn liquid-btn-ghost">
+                  See the Flow
+                </a>
               </div>
-            </motion.div>
+            </div>
+
+            <div ref={orbRef} className="panel relative mx-auto w-full max-w-[480px] p-5" style={{ transformStyle: "preserve-3d" }}>
+              <div className="mb-4 flex items-center justify-between rounded-xl border border-[#dbe4f3] bg-white px-4 py-3">
+                <span className="text-sm font-bold text-[#0f172a]">Waitlist Snapshot</span>
+                <span className="text-xs font-bold text-[#1d4ed8]">Early Access</span>
+              </div>
+              <div className="space-y-3">
+                {features.map((item) => (
+                  <div key={item} className="rounded-xl border border-[#dbe4f3] bg-[#f8fbff] px-4 py-3 text-sm font-semibold text-[#0f172a]">
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 aspect-[4/3] rounded-xl border border-dashed border-[#dbe4f3] bg-[#f8fbff] p-4 text-center text-sm font-semibold text-[#0f172a]">
+                3D visual placeholder
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section data-reveal className="px-6 py-20 md:px-10">
+          <div className="mx-auto grid w-full max-w-6xl gap-5 md:grid-cols-3">
+            {[
+              ["1.2k+", "Current waitlist size"],
+              ["41%", "Landing to signup conversion"],
+              ["< 2s", "Average page load time"],
+            ].map(([value, label]) => (
+              <div key={label} className="panel p-6">
+                <p className="font-display text-4xl font-bold text-[#0f172a]">{value}</p>
+                <p className="mt-2 text-sm font-semibold text-[#0f172a]">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="flow" data-reveal className="px-6 py-12 md:px-10 md:py-20">
+          <div className="mx-auto w-full max-w-6xl">
+            <h2 className="font-display text-3xl font-extrabold text-[#0f172a] md:text-5xl">Structured launch flow</h2>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {steps.map((step, index) => (
+                <div key={step.title} className="panel p-6">
+                  <p className="text-xs font-bold tracking-[0.2em] text-[#1d4ed8]">0{index + 1}</p>
+                  <h3 className="mt-3 font-display text-2xl font-bold text-[#0f172a]">{step.title}</h3>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-[#0f172a]">{step.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" data-reveal className="px-6 py-12 md:px-10 md:py-20">
+          <div className="mx-auto w-full max-w-6xl">
+            <h2 className="font-display text-3xl font-extrabold text-[#0f172a] md:text-5xl">FAQ</h2>
+            <div className="mt-8 space-y-3">
+              {faqs.map((item) => (
+                <div key={item.q} className="panel p-5">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 size={18} className="mt-1 text-[#1d4ed8]" />
+                    <div>
+                      <h3 className="text-base font-bold text-[#0f172a]">{item.q}</h3>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-[#0f172a]">{item.a}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section data-reveal className="px-6 pb-20 md:px-10 md:pb-28">
+          <div className="panel mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-6 p-8 md:flex-row md:items-center md:p-10">
+            <div>
+              <h2 className="font-display text-3xl font-extrabold text-[#0f172a] md:text-5xl">Ready to open your waitlist?</h2>
+              <p className="mt-3 text-sm font-semibold text-[#0f172a]">No noise. Just a high-converting launch page.</p>
+            </div>
+            <Link to="/join" className="liquid-btn liquid-btn-primary">
+              Get Started
+              <ArrowUpRight size={14} />
+            </Link>
           </div>
         </section>
       </main>
-
       <Footer />
     </div>
   );
