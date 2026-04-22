@@ -1,0 +1,105 @@
+{
+  "brief": {
+    "basics": {
+      "name": "Kaffeezeit",
+      "industry": "cafe",
+      "tagline": "Specialty Coffee im Herzen Berlins",
+      "description": "Kleines inhabergeführtes Café mit hauseigener Röstung und veganem Frühstück.",
+      "audience": { "type": "B2C", "ageRange": "25-45", "notes": "Kreative, Remote-Worker, Nachbarschaft" },
+      "usp": "Eigene Röstung, täglich frisches Gebäck aus der Region"
+    },
+    "design": {
+      "colors": { "primary": "#2B1A0E", "secondary": "#E8DCC4", "accent": "#C8662B" },
+      "shape": "round",
+      "level": "mid",
+      "style": "editorial",
+      "tone": "casual",
+      "imagery": "photos",
+      "darkMode": false,
+      "animations": "subtle",
+      "heroStyle": "split",
+      "layout": "airy"
+    },
+    "sections": {
+      "about": true,
+      "testimonials": true,
+      "gallery": true,
+      "faq": true,
+      "team": true,
+      "stats": true,
+      "pricing": false,
+      "blog": false,
+      "process": false,
+      "compareTable": false,
+      "careers": false,
+      "locations": false,
+      "partnerLogos": false
+    },
+    "offering": {
+      "services": [
+        { "name": "Frühstück", "description": "Vegan & klassisch, täglich 8–12 Uhr", "price": "ab 9€" },
+        { "name": "Hausröstung", "description": "250g Bohnen, 4 Sorten", "price": "12–16€" },
+        { "name": "Barista-Kurs", "description": "3h Workshop für Einsteiger", "price": "75€" }
+      ],
+      "showPrices": "from",
+      "openingHours": "Mo–Fr 8–18 Uhr, Sa–So 9–17 Uhr",
+      "specials": "Happy Hour 16–17 Uhr: alle Filterkaffees -30%"
+    },
+    "contact": {
+      "primaryCta": "book",
+      "phone": "+49 30 12345678",
+      "email": "hallo@kaffeezeit.de",
+      "address": "Oranienstraße 42, 10999 Berlin",
+      "maps": true,
+      "whatsapp": true,
+      "social": {
+        "instagram": "@kaffeezeit.berlin",
+        "tiktok": "@kaffeezeit"
+      }
+    },
+    "trust": {
+      "testimonials": [
+        { "text": "Bester Flat White in Kreuzberg.", "author": "Lena M.", "rating": 5 },
+        { "text": "Super Atmosphäre zum Arbeiten.", "author": "Jonas K.", "rating": 5 }
+      ],
+      "customerLogos": false,
+      "certificates": ["Bio-zertifiziert DE-ÖKO-006", "Fairtrade Partner"],
+      "stats": [
+        { "value": "2019", "label": "gegründet" },
+        { "value": "4", "label": "eigene Röstungen" },
+        { "value": "4.8★", "label": "Google Reviews" }
+      ],
+      "press": ["Tip Berlin", "Mit Vergnügen"]
+    },
+    "team": {
+      "members": [
+        { "name": "Marie Keller", "role": "Gründerin & Röstmeisterin", "bio": "10 Jahre Erfahrung, SCA-zertifiziert." },
+        { "name": "Tom Rieger", "role": "Head Barista", "bio": "Ehem. Berlin Coffee Festival Finalist." }
+      ]
+    },
+    "industrySpecific": {
+      "restaurant": {
+        "menu": [
+          { "category": "Kaffee", "items": [
+            { "name": "Espresso", "price": "2,80€" },
+            { "name": "Flat White", "price": "4,20€" },
+            { "name": "Filterkaffee", "price": "3,80€", "description": "wechselnde Sorte" }
+          ]},
+          { "category": "Frühstück", "items": [
+            { "name": "Avocado Toast", "price": "9,50€", "description": "vegan" },
+            { "name": "Granola Bowl", "price": "8,50€" }
+          ]}
+        ],
+        "reservationLink": "https://resmio.com/kaffeezeit",
+        "deliveryLinks": ["https://wolt.com/kaffeezeit"],
+        "dietaryFilters": true
+      }
+    },
+    "legal": { "imprint": true, "privacy": true },
+    "seo": {
+      "title": "Kaffeezeit Berlin – Specialty Coffee & hauseigene Röstung",
+      "description": "Inhabergeführtes Café in Kreuzberg mit eigener Röstung, veganem Frühstück und Barista-Kursen."
+    },
+    "freeText": "Warme, einladende Bildsprache. Hero mit großem Foto links, Claim rechts."
+  }
+}
