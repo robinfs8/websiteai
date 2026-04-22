@@ -9,7 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "npm --prefix landing-generator ci"
+    "postinstall": "npm --prefix landing-generator install"
   },
   "dependencies": {
     "firebase": "^12.12.1",
