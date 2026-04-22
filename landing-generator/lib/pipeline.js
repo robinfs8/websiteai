@@ -9,7 +9,7 @@ import {
   cleanup,
 } from './build.js';
 import { requestFix } from './fix.js';
-import { zipDist } from './zip.js';
+import { zipTemplateProject } from './zip.js';
 
 const MAX_FIX_ATTEMPTS = 0;
 const GENERATED_DIR = path.resolve(process.cwd(), 'generated');
@@ -59,7 +59,7 @@ export async function runPipeline(userPrompt) {
       );
     }
 
-    const zipBuffer = await zipDist(dir);
+    const zipBuffer = await zipTemplateProject(dir);
     return { zipBuffer, attempts: attempt + 1 };
   } finally {
     if (workspace) await cleanup(workspace.dir);
