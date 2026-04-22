@@ -37,7 +37,7 @@ export function zipTemplateProject(workspaceDir) {
     archive.glob('**/*', {
       cwd: workspaceDir,
       dot: true,
-      ignore: ['**/node_modules/**/*'],
+      ignore: ['node_modules/**', '**/node_modules/**'],
     });
     archive.finalize();
   });
