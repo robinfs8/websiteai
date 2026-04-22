@@ -66,7 +66,17 @@
 //   freeText: string
 // }
 
-import { PROMPT_DB, deriveFontFromStyle } from './prompt-db.js';
+import {
+  PROMPT_DB,
+  deriveFontFromStyle,
+  deriveFontPair,
+  FALLBACK_PALETTES,
+  LANDING_PATTERNS,
+  UX_CORE_RULES,
+  REACT_PERF_RULES,
+  ICON_GUIDELINES,
+  SECTION_DESIGN_PATTERNS,
+} from './prompt-db.js';
 
 const REQUIRED = ['basics.name', 'basics.industry'];
 
@@ -101,6 +111,7 @@ export function buildPrompt(brief) {
     section('COMPANY',            companyBlock(brief)),
     section('AUDIENCE',           audienceBlock(brief)),
     section('DESIGN DIRECTIVES',  designBlock(brief)),
+    section('UI/UX & TYPOGRAPHY', uiuxProBlock(brief)),
     section('SECTIONS TO BUILD',  sectionsBlock(brief)),
     section('CONTENT',            contentBlock(brief)),
     section('CONTACT & CTA',      contactBlock(brief)),
@@ -119,6 +130,52 @@ export function buildPrompt(brief) {
     blocks.join('\n\n') +
     `\n\nReturn the complete App.jsx now.`
   );
+}
+
+// ─── UI/UX PRO BLOCK ─────────────────────────────────────────────────────────
+// Injects typography (1–2 fonts), landing pattern, section design rules,
+// icon usage, UX guidelines, and React performance rules into every prompt.
+// Colors are derived from the brief when not explicitly provided.
+
+function uiuxProBlock(b) {
+  const d = b.design ?? {};
+  const industry = b.basics?.industry ?? 'other';
+  const lines = [];
+
+  // ── Typography: pick ONE font pair based on style → industry → default ──────
+  const pair = deriveFontPair(d.style, d.tone, industry);
+  lines.push(`- TYPOGRAPHY — Load via Google Fonts in index.html:`);
+  lines.push(`  Heading font: "${pair.heading}" | Body font: "${pair.body}"`);
+  lines.push(`  <link href="https://fonts.googleapis.com/css2?family=${pair.load}&display=swap" rel="stylesheet">`);
+  lines.push(`  Apply: font-family: '${pair.heading}', ${pair.headingStack} on h1–h4; '${pair.body}', ${pair.bodyStack} on body/p.`);
+
+  // ── Color palette: only injected if the brief does NOT specify explicit colors ─
+  if (!d.colors?.primary) {
+    const palette = FALLBACK_PALETTES[industry] ?? FALLBACK_PALETTES.other;
+    lines.push(`- COLORS (derived from industry — "${industry}"): primary=${palette.primary}, secondary=${palette.secondary}, accent=${palette.accent}, background=${palette.bg}, foreground=${palette.fg}. (${palette.note})`);
+  }
+
+  // ── Landing page pattern recommendation ─────────────────────────────────────
+  const pattern = LANDING_PATTERNS[industry] ?? LANDING_PATTERNS.other;
+  lines.push(`- RECOMMENDED LANDING PATTERN: ${pattern}`);
+
+  // ── Section-level design system ──────────────────────────────────────────────
+  lines.push('');
+  lines.push(SECTION_DESIGN_PATTERNS);
+
+  // ── Icon usage ───────────────────────────────────────────────────────────────
+  lines.push('');
+  lines.push(ICON_GUIDELINES);
+
+  // ── UX, accessibility and performance — always on ────────────────────────────
+  lines.push('');
+  lines.push(UX_CORE_RULES);
+
+  // ── React component best practices ───────────────────────────────────────────
+  lines.push('');
+  lines.push(REACT_PERF_RULES);
+
+  return lines.join('\n');
 }
 
 // ─── BLOCKS ──────────────────────────────────────────────────────────────────
