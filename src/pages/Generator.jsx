@@ -765,10 +765,10 @@ export default function Generator() {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      const attempts = res.headers.get("X-Build-Attempts");
+      const buildAttempts = res.headers.get("X-Build-Attempts");
       setResult(
-        attempts
-          ? `✅ AI generation complete. Downloaded landing.zip (build attempts: ${attempts}).`
+        buildAttempts
+          ? `✅ AI generation complete. Downloaded landing.zip (build attempts: ${buildAttempts}).`
           : "✅ AI generation complete. Downloaded landing.zip.",
       );
     } catch (err) {
