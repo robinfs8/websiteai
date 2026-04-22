@@ -21,3 +21,24 @@ export function zipDir(dir) {
 export function zipDist(workspaceDir) {
   return zipDir(path.join(workspaceDir, 'dist'));
 }
+
+export function zipTemplateProject(workspaceDir) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.on('data', (c) => chunks.push(c));
+    archive.on('warning', (err) => {
+      if (err.code !== 'ENOENT') reject(err);
+    });
+    archive.on('error', reject);
+    archive.on('end', () => resolve(Buffer.concat(chunks)));
+
+    archive.glob('**/*', {
+      cwd: workspaceDir,
+      dot: true,
+      ignore: ['node_modules/**'],
+    });
+    archive.finalize();
+  });
+}
