@@ -691,7 +691,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
           ) : (
             <Sparkles size={18} />
           )}
-          {loading ? "Building prompt…" : "Generate Prompt"}
+          {loading ? "Generating with AI…" : "Generate Website ZIP"}
         </button>
       </div>
 
@@ -702,7 +702,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
       )}
 
       {result && (
-        <SectionCard title="Generated prompt">
+        <SectionCard title="Generation result">
           <div className="flex justify-end -mt-2">
             <button
               onClick={copy}
@@ -745,14 +745,32 @@ export default function Generator() {
     setError("");
     setResult("");
     try {
-      const res = await fetch(`${API_URL}/prompt-preview`, {
+      const res = await fetch(`${API_URL}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ brief }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Request failed");
-      setResult(json.prompt);
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error ?? "Request failed");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "landing.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      const buildAttempts = res.headers.get("X-Build-Attempts");
+      setResult(
+        buildAttempts
+          ? `✅ AI generation complete. Downloaded landing.zip (build attempts: ${buildAttempts}).`
+          : "✅ AI generation complete. Downloaded landing.zip.",
+      );
     } catch (err) {
       setError(err.message);
     } finally {
