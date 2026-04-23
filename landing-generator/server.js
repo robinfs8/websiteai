@@ -29,16 +29,30 @@ app.post("/generate", async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 
+  // Set up SSE headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  // Send the userPrompt to the client immediately
+  res.write(`data: ${JSON.stringify({ userPrompt })}\n\n`);
+
   try {
     const { code, sitePackage } = await runPipeline(userPrompt);
-    res.json({ code, sitePackage });
+
+    // Send the final result to the client
+    res.write(`data: ${JSON.stringify({ code, sitePackage })}\n\n`);
+    res.end(); // Close the connection
   } catch (err) {
     console.error("[generate] failed:", err);
-    res.status(500).json({
-      error: err.message ?? "pipeline failed",
-      stage: err.stage ?? "unknown",
-      details: err.details ?? null,
-    });
+    res.write(
+      `data: ${JSON.stringify({
+        error: err.message ?? "pipeline failed",
+        stage: err.stage ?? "unknown",
+        details: err.details ?? null,
+      })}\n\n`
+    );
+    res.end(); // Close the connection
   }
 });
 

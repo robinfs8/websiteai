@@ -748,7 +748,8 @@ function StepGenerate({
   const normalizedHtml = (() => {
     if (!htmlContent) return "";
     const lower = htmlContent.toLowerCase();
-    if (lower.includes("<html") || lower.includes("<!doctype")) return htmlContent;
+    if (lower.includes("<html") || lower.includes("<!doctype"))
+      return htmlContent;
     return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body>${htmlContent}</body></html>`;
   })();
 
@@ -796,7 +797,9 @@ function StepGenerate({
 
   const openInNewTab = () => {
     if (!normalizedHtml) return;
-    const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([normalizedHtml], {
+      type: "text/html;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
     setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_REVOKE_DELAY_MS);
@@ -804,7 +807,9 @@ function StepGenerate({
 
   const downloadHtml = () => {
     if (!normalizedHtml) return;
-    const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([normalizedHtml], {
+      type: "text/html;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1021,36 +1026,46 @@ export default function Generator() {
     setBrief((prev) => ({ ...prev, [section]: value }));
   };
 
-  const generate = async () => {
+  const generate = () => {
     setLoading(true);
     setError("");
     setGeneratedPages([]);
     setActivePage("");
-    try {
-      const res = await fetch(`${API_URL}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief }),
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => null);
-        throw new Error(json?.error ?? "Request failed");
+
+    const eventSource = new EventSource(`${API_URL}/generate`);
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.userPrompt) {
+        console.log("Received userPrompt:", data.userPrompt);
+        // Optionally display the userPrompt in the UI
       }
 
-      const json = await res.json();
-      const pages = extractPagesFromResponse(json);
-      if (pages.length === 0) {
-        throw new Error(
-          "Unable to generate website pages. Please try again in a moment."
-        );
+      if (data.code && data.sitePackage) {
+        const pages = extractPagesFromResponse(data);
+        if (pages.length > 0) {
+          setGeneratedPages(pages);
+          setActivePage(pages[0].name);
+        }
       }
-      setGeneratedPages(pages);
-      setActivePage(pages[0].name);
-    } catch (err) {
-      setError(err.message);
-    } finally {
+
+      if (data.error) {
+        setError(data.error);
+        eventSource.close();
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error("SSE connection error:", err);
+      setError("Failed to connect to the server.");
       setLoading(false);
-    }
+      eventSource.close();
+    };
+
+    eventSource.onopen = () => {
+      console.log("SSE connection established.");
+    };
   };
 
   const stepProps = { brief, update };
