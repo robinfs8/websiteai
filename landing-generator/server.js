@@ -33,12 +33,8 @@ app.post("/generate", async (req, res) => {
   console.log("Generated userPrompt:", userPrompt);
 
   try {
-    const { code, sitePackage } = await runPipeline(userPrompt);
-
-    // Log the userPrompt to Railway logs
-    console.log("Generated userPrompt:", userPrompt);
-
-    res.json({ code, sitePackage });
+    const sitePackage = await runPipeline(userPrompt);
+    res.json(sitePackage);
   } catch (err) {
     console.error("[generate] failed:", err);
     res.status(500).json({
