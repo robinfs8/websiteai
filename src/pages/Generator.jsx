@@ -12,6 +12,60 @@ import {
 
 const API_URL = "https://websiteai-backend-production.up.railway.app";
 const BLOB_URL_REVOKE_DELAY_MS = 10000;
+const FALLBACK_PAGE_NAME = "website-preview.html";
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizePageEntries(pages) {
+  if (!isPlainObject(pages)) return [];
+  return Object.entries(pages)
+    .filter(([, html]) => typeof html === "string" && html.trim())
+    .sort(([a], [b]) => {
+      if (a === "index.html" && b !== "index.html") return -1;
+      if (b === "index.html" && a !== "index.html") return 1;
+      return a.localeCompare(b);
+    })
+    .map(([name, html], index) => ({
+      name:
+        typeof name === "string" && name.trim().toLowerCase().endsWith(".html")
+          ? name
+          : `page-${index + 1}.html`,
+      html,
+    }));
+}
+
+function extractPagesFromResponse(json) {
+  if (!isPlainObject(json)) return [];
+
+  const directPages = normalizePageEntries(json.pages);
+  if (directPages.length > 0) return directPages;
+
+  const packagePages = normalizePageEntries(json.sitePackage?.pages);
+  if (packagePages.length > 0) return packagePages;
+
+  if (typeof json.code === "string" && json.code.trim()) {
+    try {
+      const parsedCode = JSON.parse(json.code);
+      const parsedPages = normalizePageEntries(parsedCode?.pages);
+      if (parsedPages.length > 0) return parsedPages;
+    } catch {
+      if (
+        json.code.toLowerCase().includes("<html") ||
+        json.code.toLowerCase().includes("<!doctype")
+      ) {
+        return [{ name: FALLBACK_PAGE_NAME, html: json.code }];
+      }
+    }
+  }
+
+  if (typeof json.htmlCode === "string" && json.htmlCode.trim()) {
+    return [{ name: FALLBACK_PAGE_NAME, html: json.htmlCode }];
+  }
+
+  return [];
+}
 
 // ─── Schema options ───────────────────────────────────────────────────────────
 
@@ -630,12 +684,22 @@ function StepContact({ brief, update }) {
   );
 }
 
-function StepGenerate({ brief, onGenerate, result, loading, error }) {
+function StepGenerate({
+  brief,
+  onGenerate,
+  pages,
+  activePage,
+  onSelectPage,
+  loading,
+  error,
+}) {
   const [copied, setCopied] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const [previewMode, setPreviewMode] = useState("desktop");
+  const selectedPage =
+    pages.find((page) => page.name === activePage) ?? pages[0] ?? null;
 
-  const htmlContent = result?.trim() || "";
+  const htmlContent = selectedPage?.html?.trim() || "";
 
   const normalizedHtml = (() => {
     if (!htmlContent) return "";
@@ -665,11 +729,28 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "website-preview.html";
+    a.download = selectedPage?.name || FALLBACK_PAGE_NAME;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadAllHtml = () => {
+    if (pages.length === 0) return;
+    pages.forEach((page) => {
+      const pageHtml = page.html?.trim();
+      if (!pageHtml) return;
+      const blob = new Blob([pageHtml], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = page.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
   };
 
   return (
@@ -735,8 +816,28 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
         </div>
       )}
 
-      {result && normalizedHtml && (
+      {pages.length > 0 && normalizedHtml && (
         <SectionCard title="HTML Preview">
+          <div className="flex flex-wrap items-center justify-between gap-2 -mt-2 mb-2">
+            <div className="inline-flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1 text-xs">
+              {pages.map((page) => (
+                <button
+                  key={page.name}
+                  onClick={() => {
+                    onSelectPage(page.name);
+                    setFrameKey((v) => v + 1);
+                  }}
+                  className={`px-2.5 py-1 rounded-md transition-colors ${
+                    selectedPage?.name === page.name
+                      ? "bg-indigo-500 text-white"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {page.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-2 -mt-2">
             <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1 text-xs">
               <button
@@ -777,7 +878,13 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
                 onClick={downloadHtml}
                 className="text-white/50 hover:text-white/80 transition-colors"
               >
-                Download
+                Download Page
+              </button>
+              <button
+                onClick={downloadAllHtml}
+                className="text-white/50 hover:text-white/80 transition-colors"
+              >
+                Download All
               </button>
               <button
                 onClick={copy}
@@ -819,7 +926,8 @@ export default function Generator() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [brief, setBrief] = useState(initialBrief);
-  const [result, setResult] = useState("");
+  const [generatedPages, setGeneratedPages] = useState([]);
+  const [activePage, setActivePage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -830,7 +938,8 @@ export default function Generator() {
   const generate = async () => {
     setLoading(true);
     setError("");
-    setResult("");
+    setGeneratedPages([]);
+    setActivePage("");
     try {
       const res = await fetch(`${API_URL}/generate`, {
         method: "POST",
@@ -843,18 +952,14 @@ export default function Generator() {
       }
 
       const json = await res.json();
-      const responseHtml =
-        typeof json?.htmlCode === "string" && json.htmlCode.trim()
-          ? json.htmlCode
-          : typeof json?.code === "string" && json.code.trim()
-          ? json.code
-          : "";
-      if (!responseHtml) {
+      const pages = extractPagesFromResponse(json);
+      if (pages.length === 0) {
         throw new Error(
-          "Invalid response: htmlCode or code field is missing or empty"
+          "Unable to generate website pages. Please try again in a moment."
         );
       }
-      setResult(responseHtml);
+      setGeneratedPages(pages);
+      setActivePage(pages[0].name);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -937,7 +1042,9 @@ export default function Generator() {
             <StepGenerate
               {...stepProps}
               onGenerate={generate}
-              result={result}
+              pages={generatedPages}
+              activePage={activePage}
+              onSelectPage={setActivePage}
               loading={loading}
               error={error}
             />
