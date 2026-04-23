@@ -757,7 +757,7 @@ export default function Generator() {
 
       const json = await res.json();
       if (typeof json?.code !== "string" || !json.code.trim()) {
-        throw new Error("Invalid response: code missing");
+        throw new Error("Invalid response: code field is missing or empty");
       }
       setResult(json.code);
     } catch (err) {
