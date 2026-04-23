@@ -1026,46 +1026,36 @@ export default function Generator() {
     setBrief((prev) => ({ ...prev, [section]: value }));
   };
 
-  const generate = () => {
+  const generate = async () => {
     setLoading(true);
     setError("");
     setGeneratedPages([]);
     setActivePage("");
-
-    const eventSource = new EventSource(`${API_URL}/generate`);
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.userPrompt) {
-        console.log("Received userPrompt:", data.userPrompt);
-        // Optionally display the userPrompt in the UI
+    try {
+      const res = await fetch(`${API_URL}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brief }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error ?? "Request failed");
       }
 
-      if (data.code && data.sitePackage) {
-        const pages = extractPagesFromResponse(data);
-        if (pages.length > 0) {
-          setGeneratedPages(pages);
-          setActivePage(pages[0].name);
-        }
+      const json = await res.json();
+      const pages = extractPagesFromResponse(json);
+      if (pages.length === 0) {
+        throw new Error(
+          "Unable to generate website pages. Please try again in a moment."
+        );
       }
-
-      if (data.error) {
-        setError(data.error);
-        eventSource.close();
-      }
-    };
-
-    eventSource.onerror = (err) => {
-      console.error("SSE connection error:", err);
-      setError("Failed to connect to the server.");
+      setGeneratedPages(pages);
+      setActivePage(pages[0].name);
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-      eventSource.close();
-    };
-
-    eventSource.onopen = () => {
-      console.log("SSE connection established.");
-    };
+    }
   };
 
   const stepProps = { brief, update };
