@@ -633,6 +633,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
   const [copied, setCopied] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const [previewMode, setPreviewMode] = useState("desktop");
+  const previewHeightClass = "h-[720px]";
 
   const htmlCode = result?.trim() || "";
 
@@ -652,10 +653,11 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
 
   const openInNewTab = () => {
     if (!normalizedHtml) return;
-    const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const opened = window.open("", "_blank", "noopener,noreferrer");
+    if (!opened) return;
+    opened.document.open();
+    opened.document.write(normalizedHtml);
+    opened.document.close();
   };
 
   const downloadHtml = () => {
@@ -791,15 +793,15 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
           <div
             className={`mx-auto overflow-hidden rounded-xl border border-white/10 bg-white ${
               previewMode === "mobile"
-                ? "w-full max-w-[390px] h-[720px]"
-                : "w-full h-[720px]"
+                ? `w-full max-w-[390px] ${previewHeightClass}`
+                : `w-full ${previewHeightClass}`
             }`}
           >
             <iframe
               key={frameKey}
               title="Generated website preview"
               srcDoc={normalizedHtml}
-              sandbox="allow-scripts allow-forms"
+              sandbox="allow-scripts allow-forms allow-modals"
               className="h-full w-full border-0"
             />
           </div>
