@@ -655,7 +655,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
     const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const downloadHtml = () => {
@@ -799,7 +799,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
               key={frameKey}
               title="Generated website preview"
               srcDoc={normalizedHtml}
-              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"
+              sandbox="allow-scripts allow-forms"
               className="h-full w-full border-0"
             />
           </div>
