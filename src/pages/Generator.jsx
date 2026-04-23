@@ -954,7 +954,9 @@ export default function Generator() {
       const json = await res.json();
       const pages = extractPagesFromResponse(json);
       if (pages.length === 0) {
-        throw new Error("Invalid response: no HTML pages found in backend JSON");
+        throw new Error(
+          "Unable to generate website pages. Please try again in a moment."
+        );
       }
       setGeneratedPages(pages);
       setActivePage(pages[0].name);
