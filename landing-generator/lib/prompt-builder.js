@@ -125,10 +125,10 @@ export function buildPrompt(brief) {
   ].filter(Boolean);
 
   return (
-    `You are building a single-page React app as a landing page for the business below.\n` +
-    `Return the complete App.jsx file. Follow every directive strictly.\n\n` +
+    `You are building a multi-page static website package for the business below.\n` +
+    `Return strictly one JSON object with top-level keys: pages, assets, slots. Follow every directive strictly.\n\n` +
     blocks.join('\n\n') +
-    `\n\nReturn the complete App.jsx now.`
+    `\n\nReturn JSON only now in the required pages/assets/slots format.`
   );
 }
 

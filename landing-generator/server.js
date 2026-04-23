@@ -30,8 +30,8 @@ app.post("/generate", async (req, res) => {
   }
 
   try {
-    const { code } = await runPipeline(userPrompt);
-    res.json({ code });
+    const { code, sitePackage } = await runPipeline(userPrompt);
+    res.json({ code, sitePackage });
   } catch (err) {
     console.error("[generate] failed:", err);
     res.status(500).json({
