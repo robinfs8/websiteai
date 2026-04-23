@@ -49,7 +49,10 @@ const PREVIEW_BRIDGE_SCRIPT = `
       const page = normalize(anchor.getAttribute("href"));
       if (!page) return;
       event.preventDefault();
-      window.parent.postMessage({ type: "websiteai:preview-nav", page }, "*");
+      window.parent.postMessage(
+        { type: "websiteai:preview-nav", page },
+        __PARENT_ORIGIN__
+      );
     });
   })();
 </script>`;
@@ -751,20 +754,30 @@ function StepGenerate({
 
   const previewHtml = (() => {
     if (!normalizedHtml) return "";
+    const bridgeScript = PREVIEW_BRIDGE_SCRIPT.replace(
+      "__PARENT_ORIGIN__",
+      JSON.stringify(window.location.origin)
+    );
     if (normalizedHtml.includes("</body>")) {
-      return normalizedHtml.replace("</body>", `${PREVIEW_BRIDGE_SCRIPT}</body>`);
+      return normalizedHtml.replace("</body>", `${bridgeScript}</body>`);
     }
-    return `${normalizedHtml}${PREVIEW_BRIDGE_SCRIPT}`;
+    return `${normalizedHtml}${bridgeScript}`;
   })();
 
   useEffect(() => {
     const handlePreviewNavigation = (event) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
-      if (event.origin !== "null") return;
       const payload = event.data;
-      if (!payload || payload.type !== "websiteai:preview-nav") return;
-      const targetPage = String(payload.page || "").trim();
-      if (!targetPage) return;
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        payload.type !== "websiteai:preview-nav" ||
+        typeof payload.page !== "string"
+      ) {
+        return;
+      }
+      const targetPage = payload.page.trim();
+      if (!/^[a-z0-9-]+\.html$/i.test(targetPage)) return;
       const match = pages.find((page) => page.name === targetPage);
       if (!match) return;
       onSelectPage(match.name);
