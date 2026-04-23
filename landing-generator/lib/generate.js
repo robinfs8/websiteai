@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = `You are generating a multi-page static website.
+const SYSTEM_PROMPT = `You are generating a JSON representation of a multi-page static website package.
 Return ONLY JSON in this exact format:
 {
   "pages": {

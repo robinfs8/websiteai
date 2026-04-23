@@ -26,7 +26,7 @@ function findAllMatches(text, regex) {
 function validatePageHtml(fileName, html) {
   const trimmed = html.trim();
   const lower = trimmed.toLowerCase();
-  if (!lower.startsWith("<!doctype html")) {
+  if (!lower.startsWith("<!doctype html>")) {
     throw new Error(`pages.${fileName} must start with <!doctype html>`);
   }
   if (!lower.endsWith("</html>")) {
@@ -137,12 +137,6 @@ export function parseAndValidateSitePackage(raw) {
       throw new Error(`missing slots entry for data-slot "${slotKey}"`);
     }
   }
-  for (const slotKey of Object.keys(slots)) {
-    if (!slotKeysInPages.has(slotKey)) {
-      throw new Error(`slots.${slotKey} is unused in pages HTML`);
-    }
-  }
-
   for (const [assetName, assetValue] of Object.entries(assets)) {
     if (typeof assetValue !== "string" || !assetValue.trim()) {
       throw new Error(`assets.${assetName} must be a non-empty string`);

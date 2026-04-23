@@ -259,7 +259,7 @@ export const PROMPT_DB = {
     'HTML CONTRACT: Each page must start with <!doctype html> and end with </html>.',
     'MULTI-PAGE NAVIGATION: Use only real file links like /index.html, /contact.html, /team.html.',
     'NAVIGATION FORBIDDEN: Never use hash navigation (#...), router.push(), window.location.hash, or SPA routing.',
-    'SLOTS CONTRACT: Every editable text must include a stable data-slot="section.element" attribute. Do not use random slot IDs.',
+    'SLOTS CONTRACT: Every editable text must include a stable data-slot="section.element" attribute (e.g. hero.title, team.member1.role, contact.email). Do not use random slot IDs.',
     'ASSETS CONTRACT: All images must use local /assets/... paths and be listed in the "assets" object.',
     'IMAGE FORBIDDEN: Never use external image URLs.',
     'TECH CONSTRAINT: Build plain static HTML/CSS/JS pages. Never use React, Tailwind, or any framework output.',
