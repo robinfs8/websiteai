@@ -1,14 +1,26 @@
 import { generateAppCode } from './generate.js';
+import { parseAndValidateSitePackage } from './site-package.js';
 
 export async function runPipeline(userPrompt) {
-  const code = await generateAppCode(userPrompt);
-  if (!code || !code.trim()) {
+  const raw = await generateAppCode(userPrompt);
+  if (!raw || !raw.trim()) {
     throwStaged(
       'generate',
       `empty code response from model for prompt length ${userPrompt?.length ?? 0}`,
     );
   }
-  return { code };
+
+  let sitePackage;
+  try {
+    sitePackage = parseAndValidateSitePackage(raw);
+  } catch (err) {
+    throwStaged('validate', err.message);
+  }
+
+  return {
+    code: JSON.stringify(sitePackage, null, 2),
+    sitePackage,
+  };
 }
 
 function throwStaged(stage, message, details) {

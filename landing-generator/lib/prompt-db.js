@@ -254,13 +254,16 @@ export const PROMPT_DB = {
   // These are added to every prompt regardless of brief content.
 
   always: [
-    'ROUTING: Use react-router-dom. Wrap the whole app in <BrowserRouter>. Define two routes: path="/" → <LandingPage />, path="/contact" → <ContactPage />. Both components live in the same App.jsx file.',
-    'CONTACT PAGE: The ContactPage component must include: company name as a heading, the email as a clickable mailto: link, phone as a clickable tel: link (if provided), the address as plain text (if provided), and a simple contact form (fields: Name, E-Mail, Nachricht) with action="mailto:[email]" method="post" encType="text/plain". Style it consistently with the landing page.',
-    'NAVBAR LINKS: The navbar must include a "Kontakt" link using react-router-dom <Link to="/contact">. All other in-page links use smooth scroll anchors (#section-id). CTAs in the hero link to /contact via <Link>.',
-    'CTA DEFAULT: If no primaryCta is specified, use "Kontakt aufnehmen" as the CTA text, always linking to /contact.',
-    'LEGAL FOOTER: Footer must always contain two links: "Impressum" and "Datenschutz" as anchor tags pointing to #impressum and #datenschutz respectively.',
-    "ALLOWED IMPORTS: Only these imports are permitted — react (useState, useEffect, useRef etc.), react-router-dom (BrowserRouter, Routes, Route, Link, useNavigate), framer-motion (motion, AnimatePresence), lucide-react (any icons). No other external packages.",
-    "OUTPUT FORMAT: Return the complete, self-contained App.jsx file. No explanatory prose, no markdown, no partial code.",
+    'OUTPUT FORMAT: Return only one JSON object with top-level keys "pages", "assets", and "slots".',
+    'PAGES CONTRACT: "pages" maps real file names (e.g. index.html, contact.html, team.html) to complete HTML5 documents.',
+    'HTML CONTRACT: Each page must start with <!doctype html> and end with </html>.',
+    'MULTI-PAGE NAVIGATION: Use only real file links like /index.html, /contact.html, /team.html.',
+    'NAVIGATION FORBIDDEN: Never use hash navigation (#...), router.push(), window.location.hash, or SPA routing.',
+    'SLOTS CONTRACT: Every editable text must include a stable data-slot="section.element" attribute (e.g. hero.title, team.member1.role, contact.email). Do not use random slot IDs.',
+    'ASSETS CONTRACT: All images must use local /assets/... paths and be listed in the "assets" object.',
+    'IMAGE FORBIDDEN: Never use external image URLs.',
+    'TECH CONSTRAINT: Build plain static HTML/CSS/JS pages. Never use React, Tailwind, or any framework output.',
+    'NO EXPLANATIONS: Return JSON only, no prose and no markdown fences.',
   ],
 };
 
