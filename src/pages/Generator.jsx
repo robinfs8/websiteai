@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 const API_URL = "https://websiteai-backend-production.up.railway.app";
+const BLOB_URL_REVOKE_DELAY_MS = 60000;
 
 // ─── Schema options ───────────────────────────────────────────────────────────
 
@@ -655,7 +656,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
     const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_REVOKE_DELAY_MS);
   };
 
   const downloadHtml = () => {
@@ -799,6 +800,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
               key={frameKey}
               title="Generated website preview"
               srcDoc={normalizedHtml}
+              // Intentionally no allow-same-origin to keep preview isolated.
               sandbox="allow-scripts allow-forms allow-modals"
               className="h-full w-full border-0"
             />
