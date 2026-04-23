@@ -17,10 +17,7 @@ export async function runPipeline(userPrompt) {
     throwStaged('validate', err.message);
   }
 
-  return {
-    code: JSON.stringify(sitePackage, null, 2),
-    sitePackage,
-  };
+  return sitePackage;
 }
 
 function throwStaged(stage, message, details) {

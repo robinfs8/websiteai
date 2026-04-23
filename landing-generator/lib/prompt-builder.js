@@ -126,7 +126,14 @@ export function buildPrompt(brief) {
 
   return (
     `You are building a multi-page static website package for the business below.\n` +
-    `Return strictly one JSON object with top-level keys: pages, assets, slots. Follow every directive strictly.\n\n` +
+    `Return strictly ONE JSON object with exactly these top-level keys: "pages", "assets", "slots".\n` +
+    `Required output format:\n` +
+    `{\n` +
+    `  "pages": { "index.html": "...full HTML...", "contact.html": "...full HTML...", "team.html": "...full HTML..." },\n` +
+    `  "assets": { "hero.jpg": "placeholder" },\n` +
+    `  "slots": { "hero.title": "...", "hero.subtitle": "...", "contact.address": "..." }\n` +
+    `}\n` +
+    `Follow every directive strictly.\n\n` +
     blocks.join('\n\n') +
     `\n\nReturn JSON only now in the required pages/assets/slots format.`
   );
