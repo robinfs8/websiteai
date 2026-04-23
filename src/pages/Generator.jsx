@@ -631,11 +631,44 @@ function StepContact({ brief, update }) {
 
 function StepGenerate({ brief, onGenerate, result, loading, error }) {
   const [copied, setCopied] = useState(false);
+  const [frameKey, setFrameKey] = useState(0);
+  const [previewMode, setPreviewMode] = useState("desktop");
+
+  const htmlCode = result?.trim() || "";
+
+  const normalizedHtml = (() => {
+    if (!htmlCode) return "";
+    const lower = htmlCode.toLowerCase();
+    if (lower.includes("<html") || lower.includes("<!doctype")) return htmlCode;
+    return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body>${htmlCode}</body></html>`;
+  })();
 
   const copy = () => {
-    navigator.clipboard.writeText(result);
+    if (!htmlCode) return;
+    navigator.clipboard.writeText(htmlCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openInNewTab = () => {
+    if (!normalizedHtml) return;
+    const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  };
+
+  const downloadHtml = () => {
+    if (!normalizedHtml) return;
+    const blob = new Blob([normalizedHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "website-preview.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -701,20 +734,75 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
         </div>
       )}
 
-      {result && (
-        <SectionCard title="Generation result">
-          <div className="flex justify-end -mt-2">
-            <button
-              onClick={copy}
-              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
-              {copied ? "Copied" : "Copy"}
-            </button>
+      {result && normalizedHtml && (
+        <SectionCard title="HTML Preview">
+          <div className="flex flex-wrap items-center justify-between gap-2 -mt-2">
+            <div className="inline-flex rounded-lg border border-white/10 bg-white/5 p-1 text-xs">
+              <button
+                onClick={() => setPreviewMode("mobile")}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  previewMode === "mobile"
+                    ? "bg-indigo-500 text-white"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                Mobile
+              </button>
+              <button
+                onClick={() => setPreviewMode("desktop")}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  previewMode === "desktop"
+                    ? "bg-indigo-500 text-white"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                Desktop
+              </button>
+            </div>
+            <div className="flex flex-wrap justify-end gap-3 text-xs">
+              <button
+                onClick={() => setFrameKey((v) => v + 1)}
+                className="text-white/50 hover:text-white/80 transition-colors"
+              >
+                Reload
+              </button>
+              <button
+                onClick={openInNewTab}
+                className="text-white/50 hover:text-white/80 transition-colors"
+              >
+                Open
+              </button>
+              <button
+                onClick={downloadHtml}
+                className="text-white/50 hover:text-white/80 transition-colors"
+              >
+                Download
+              </button>
+              <button
+                onClick={copy}
+                className="flex items-center gap-1.5 text-white/50 hover:text-white/80 transition-colors"
+              >
+                {copied ? <Check size={13} /> : <Copy size={13} />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
           </div>
-          <pre className="text-xs text-white/70 whitespace-pre-wrap leading-relaxed font-mono bg-black/20 rounded-xl p-4 max-h-[480px] overflow-y-auto">
-            {result}
-          </pre>
+
+          <div
+            className={`mx-auto overflow-hidden rounded-xl border border-white/10 bg-white ${
+              previewMode === "mobile"
+                ? "w-full max-w-[390px] h-[720px]"
+                : "w-full h-[720px]"
+            }`}
+          >
+            <iframe
+              key={frameKey}
+              title="Generated website preview"
+              srcDoc={normalizedHtml}
+              sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"
+              className="h-full w-full border-0"
+            />
+          </div>
         </SectionCard>
       )}
     </div>
@@ -737,9 +825,6 @@ export default function Generator() {
     setBrief((prev) => ({ ...prev, [section]: value }));
   };
 
-  const canNext =
-    step < 3 || (brief.basics.name.trim() && brief.basics.industry);
-
   const generate = async () => {
     setLoading(true);
     setError("");
@@ -756,10 +841,18 @@ export default function Generator() {
       }
 
       const json = await res.json();
-      if (typeof json?.code !== "string" || !json.code.trim()) {
-        throw new Error("Invalid response: code field is missing or empty");
+      const nextHtml =
+        typeof json?.htmlCode === "string" && json.htmlCode.trim()
+          ? json.htmlCode
+          : typeof json?.code === "string" && json.code.trim()
+          ? json.code
+          : "";
+      if (!nextHtml) {
+        throw new Error(
+          "Invalid response: htmlCode field is missing or empty"
+        );
       }
-      setResult(json.code);
+      setResult(nextHtml);
     } catch (err) {
       setError(err.message);
     } finally {
