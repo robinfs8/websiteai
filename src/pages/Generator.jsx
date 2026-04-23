@@ -10,7 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = "https://websiteai-backend-production.up.railway.app";
 
 // ─── Schema options ───────────────────────────────────────────────────────────
 
@@ -769,7 +769,7 @@ export default function Generator() {
       setResult(
         buildAttempts
           ? `✅ AI generation complete. Downloaded landing.zip (build attempts: ${buildAttempts}).`
-          : "✅ AI generation complete. Downloaded landing.zip.",
+          : "✅ AI generation complete. Downloaded landing.zip."
       );
     } catch (err) {
       setError(err.message);
