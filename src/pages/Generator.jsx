@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 const API_URL = "https://websiteai-backend-production.up.railway.app";
-const BLOB_URL_REVOKE_DELAY_MS = 60000;
+const BLOB_URL_REVOKE_DELAY_MS = 10000;
 
 // ─── Schema options ───────────────────────────────────────────────────────────
 
@@ -635,18 +635,18 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
   const [frameKey, setFrameKey] = useState(0);
   const [previewMode, setPreviewMode] = useState("desktop");
 
-  const htmlCode = result?.trim() || "";
+  const htmlContent = result?.trim() || "";
 
   const normalizedHtml = (() => {
-    if (!htmlCode) return "";
-    const lower = htmlCode.toLowerCase();
-    if (lower.includes("<html") || lower.includes("<!doctype")) return htmlCode;
-    return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body>${htmlCode}</body></html>`;
+    if (!htmlContent) return "";
+    const lower = htmlContent.toLowerCase();
+    if (lower.includes("<html") || lower.includes("<!doctype")) return htmlContent;
+    return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body>${htmlContent}</body></html>`;
   })();
 
   const copy = () => {
-    if (!htmlCode) return;
-    navigator.clipboard.writeText(htmlCode);
+    if (!htmlContent) return;
+    navigator.clipboard.writeText(htmlContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -801,7 +801,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
               title="Generated website preview"
               srcDoc={normalizedHtml}
               // Intentionally no allow-same-origin to keep preview isolated.
-              sandbox="allow-scripts allow-forms allow-modals"
+              sandbox="allow-scripts allow-forms"
               className="h-full w-full border-0"
             />
           </div>
@@ -843,18 +843,18 @@ export default function Generator() {
       }
 
       const json = await res.json();
-      const nextHtml =
+      const responseHtml =
         typeof json?.htmlCode === "string" && json.htmlCode.trim()
           ? json.htmlCode
           : typeof json?.code === "string" && json.code.trim()
           ? json.code
           : "";
-      if (!nextHtml) {
+      if (!responseHtml) {
         throw new Error(
           "Invalid response: htmlCode or code field is missing or empty"
         );
       }
-      setResult(nextHtml);
+      setResult(responseHtml);
     } catch (err) {
       setError(err.message);
     } finally {
