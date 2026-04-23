@@ -691,7 +691,7 @@ function StepGenerate({ brief, onGenerate, result, loading, error }) {
           ) : (
             <Sparkles size={18} />
           )}
-          {loading ? "Generating with AI…" : "Generate Website ZIP"}
+          {loading ? "Generating with AI…" : "Generate Website Code"}
         </button>
       </div>
 
@@ -755,22 +755,11 @@ export default function Generator() {
         throw new Error(json?.error ?? "Request failed");
       }
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "landing.zip";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      const buildAttempts = res.headers.get("X-Build-Attempts");
-      setResult(
-        buildAttempts
-          ? `✅ AI generation complete. Downloaded landing.zip (build attempts: ${buildAttempts}).`
-          : "✅ AI generation complete. Downloaded landing.zip."
-      );
+      const json = await res.json();
+      if (typeof json?.code !== "string" || !json.code.trim()) {
+        throw new Error("Invalid response: code missing");
+      }
+      setResult(json.code);
     } catch (err) {
       setError(err.message);
     } finally {

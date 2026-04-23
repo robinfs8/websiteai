@@ -30,11 +30,8 @@ app.post("/generate", async (req, res) => {
   }
 
   try {
-    const { zipBuffer, attempts } = await runPipeline(userPrompt);
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", 'attachment; filename="landing.zip"');
-    res.setHeader("X-Build-Attempts", String(attempts));
-    res.send(zipBuffer);
+    const { code } = await runPipeline(userPrompt);
+    res.json({ code });
   } catch (err) {
     console.error("[generate] failed:", err);
     res.status(500).json({
