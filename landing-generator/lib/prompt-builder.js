@@ -73,7 +73,7 @@ import {
   FALLBACK_PALETTES,
   LANDING_PATTERNS,
   UX_CORE_RULES,
-  REACT_PERF_RULES,
+  HTML_BEST_PRACTICES,
   ICON_GUIDELINES,
   SECTION_DESIGN_PATTERNS,
 } from './prompt-db.js';
@@ -171,9 +171,9 @@ function uiuxProBlock(b) {
   lines.push('');
   lines.push(UX_CORE_RULES);
 
-  // ── React component best practices ───────────────────────────────────────────
+  // ── HTML best practices ───────────────────────────────────────────────────────
   lines.push('');
-  lines.push(REACT_PERF_RULES);
+  lines.push(HTML_BEST_PRACTICES);
 
   return lines.join('\n');
 }

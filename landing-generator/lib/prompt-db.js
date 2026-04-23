@@ -36,16 +36,16 @@ export const PROMPT_DB = {
   design: {
     shape: {
       round:
-        "Shape language: rounded. Use rounded-2xl on all cards and containers, rounded-full on buttons and avatar images, soft box-shadow (shadow-md). No sharp corners anywhere.",
+        "Shape language: rounded. Use border-radius: 1rem on all cards and containers, border-radius: 9999px on buttons and avatar images, soft box-shadow. No sharp corners anywhere.",
       angular:
-        "Shape language: sharp and angular. Use rounded-none on cards and containers, at most rounded on small interactive elements. Hard or no shadows. Borders as lines, not softness.",
+        "Shape language: sharp and angular. Use border-radius: 0 on cards and containers, at most 4px border-radius on small interactive elements. Hard or no shadows. Borders as lines, not softness.",
       mixed:
-        "Shape language: mixed. Rounded corners on interactive components (buttons rounded-full, cards rounded-xl), clean straight edges on structural layout sections and dividers.",
+        "Shape language: mixed. Rounded corners on interactive components (buttons: border-radius: 9999px, cards: border-radius: 0.75rem), clean straight edges on structural layout sections and dividers.",
     },
 
     level: {
       "super-modern":
-        "Sophistication level: cutting-edge. Push design boundaries — use gradient meshes, glassmorphism cards, bold asymmetric grids, staggered entrance animations, kinetic micro-interactions. Every section should feel intentional and forward-looking.",
+        "Sophistication level: cutting-edge. Push design boundaries — use gradient meshes, frosted glass cards (CSS backdrop-filter: blur), bold asymmetric grids, staggered entrance animations via CSS, kinetic micro-interactions. Every section should feel intentional and forward-looking.",
       mid: "Sophistication level: contemporary. Clean responsive grid, smooth hover transitions, modern type hierarchy, purposeful color accents. Professional but not over-engineered.",
       basic:
         "Sophistication level: clean and functional. Standard symmetric grid, clear typography, minimal decoration. Readability and clarity over visual flair.",
@@ -55,17 +55,17 @@ export const PROMPT_DB = {
       minimal:
         "Design style: minimalist. Maximum whitespace, strict 1–2 color palette, sparse iconography. Typography carries all the visual weight. Every element must earn its place.",
       brutalist:
-        "Design style: brutalist. Raw heavy typography, stark high-contrast colors, intentional asymmetry, visible structural grid. No soft shadows, no rounded corners, no gradients. Bold and confrontational.",
+        "Design style: brutalist. Raw heavy typography, stark high-contrast colors, intentional asymmetry, visible structural grid. No soft shadows, no border-radius, no gradients. Bold and confrontational.",
       modern:
         "Design style: modern. Clean lines, balanced whitespace, contemporary type pairings, subtle color accents. Polished without being sterile.",
       classic:
-        "Design style: classic/timeless. Symmetrical layouts, traditional type hierarchy, conservative color palette, dignified and trustworthy structure.",
+        "Design style: classic/timeless. Symmetrical layouts, traditional type hierarchy (font-family: serif for headings), conservative color palette, dignified and trustworthy structure.",
       playful:
         "Design style: playful. Bright accent colors, bouncy hover animations, friendly rounded shapes, warm illustrations or icons. Fun but never chaotic.",
       editorial:
         "Design style: editorial. Magazine-inspired layout — large typographic moments, mixed column widths, strong photo integration. Reads like a premium publication.",
       glassmorphism:
-        "Design style: glassmorphism. Frosted glass cards (backdrop-blur-md, bg-white/10 or bg-black/20), glowing or neon accent colors, deep dark or rich gradient backgrounds.",
+        "Design style: glassmorphism. Frosted glass cards (CSS: backdrop-filter: blur(12px); background: rgba(255,255,255,0.1) or rgba(0,0,0,0.2)), glowing or neon accent colors, deep dark or rich gradient backgrounds.",
     },
 
     tone: {
@@ -88,11 +88,11 @@ export const PROMPT_DB = {
 
     imagery: {
       photos:
-        "Imagery: real photography. Use https://picsum.photos/ placeholders (with specific seed numbers for consistency). Photos should feel authentic and high-quality.",
+        "Imagery: photographs. Use local image paths under /assets/ (e.g. /assets/hero.jpg, /assets/team.jpg). Never use external image URLs.",
       illustrations:
         "Imagery: illustrations. Use inline SVG illustrations or icon-heavy decorative sections. Avoid photographic placeholders.",
       abstract:
-        "Imagery: abstract graphics. Use geometric CSS shapes, gradient blobs (via Tailwind), or SVG paths rather than literal photos.",
+        "Imagery: abstract graphics. Use geometric CSS shapes, gradient blobs (CSS radial-gradient), or inline SVG paths rather than literal photos.",
       minimal:
         "Imagery: minimal. One or two key visuals maximum — everything else is whitespace and typography.",
       none: "Imagery: none. Pure text, typography, color blocks. Do not use any img tags or image placeholder divs.",
@@ -105,32 +105,32 @@ export const PROMPT_DB = {
     },
 
     animations: {
-      none: "Animations: none. Completely static — no CSS transitions, no transforms, no framer-motion usage whatsoever. Remove all animation-related code.",
+      none: "Animations: none. Completely static — no CSS transitions, no transforms. Remove all animation-related code.",
       subtle:
-        "Animations: subtle. Use framer-motion whileInView with opacity/y fade-ins on section entry. Smooth hover color/scale transitions (duration 200–300ms). Keep it tasteful.",
+        "Animations: subtle. Use CSS transitions (opacity, transform) on section entry via IntersectionObserver. Smooth hover color/scale transitions (transition: all 0.2s–0.3s ease). Keep it tasteful.",
       moderate:
-        "Animations: moderate. Scroll-triggered reveals with staggered children (staggerChildren 0.1s), hover lift effects (scale 1.02, shadow increase), smooth section transitions.",
+        "Animations: moderate. CSS scroll-triggered fade-ins with staggered animation-delay (0.1s increments), hover lift effects (transform: translateY(-2px), box-shadow increase), smooth section transitions.",
       heavy:
-        "Animations: rich and expressive. Full framer-motion orchestration — parallax hero, staggered entrance choreography, kinetic typography (character-by-character), interactive hover states with spring physics.",
+        "Animations: rich and expressive. CSS keyframe animations for entrance choreography, kinetic hover states with smooth cubic-bezier transitions. Use JavaScript IntersectionObserver for scroll-triggered reveals.",
     },
 
     heroStyle: {
       "fullscreen-image":
-        "Hero layout: fullscreen image. Full viewport height (min-h-screen), background image fills frame with bg-cover, dark overlay gradient (from-black/70 to-black/30) for text readability. Headline and CTA centered or left-aligned over image.",
+        "Hero layout: fullscreen image. Full viewport height (min-height: 100vh), background image fills frame with object-fit: cover, dark overlay gradient (linear-gradient from rgba(0,0,0,0.7) to rgba(0,0,0,0.3)) for text readability. Headline and CTA centered or left-aligned over image.",
       split:
         "Hero layout: split layout. Left half: headline, subline, CTA button(s). Right half: image or visual element. Use CSS grid or flexbox 50/50. On mobile, stack vertically (image below text).",
       "video-bg":
-        'Hero layout: video background. Use a styled div placeholder (bg-gradient-to-br from-gray-900 to-gray-700, min-h-screen) to simulate a video background. Text overlay with white text, high contrast. Add a subtle "▶ Showreel" button as decoration.',
+        'Hero layout: video background. Use a styled div placeholder (background: linear-gradient(135deg, #111827, #374151); min-height: 100vh) to simulate a video background. Text overlay with white text, high contrast. Add a subtle "▶ Showreel" button as decoration.',
       "text-only":
-        "Hero layout: text-only. Large typographic statement dominates the viewport. Optional geometric color-block accent or gradient shape in the background. No photography needed.",
+        "Hero layout: text-only. Large typographic statement dominates the viewport. Optional geometric color-block accent or CSS gradient shape in the background. No photography needed.",
     },
 
     layout: {
-      airy: "Layout feel: airy and spacious. Section vertical padding: py-24 to py-32. Large line heights (leading-relaxed or leading-loose). Generous gaps between elements. Let content breathe.",
+      airy: "Layout feel: airy and spacious. Section vertical padding: 6rem–8rem. Large line heights (line-height: 1.7–1.9). Generous gaps between elements. Let content breathe.",
       balanced:
-        "Layout feel: balanced. Section vertical padding: py-16 to py-20. Consistent rhythm, comfortable reading density. Standard gap-8 to gap-12 between elements.",
+        "Layout feel: balanced. Section vertical padding: 4rem–5rem. Consistent rhythm, comfortable reading density. Standard gap of 2rem–3rem between elements.",
       dense:
-        "Layout feel: information-dense. Section vertical padding: py-8 to py-12. Multiple columns where possible. Compact gap-4 to gap-6. Pack value — show more per screen.",
+        "Layout feel: information-dense. Section vertical padding: 2rem–3rem. Multiple columns where possible. Compact 1rem–1.5rem gaps. Pack value — show more per screen.",
     },
   },
 
@@ -145,9 +145,9 @@ export const PROMPT_DB = {
       "SECTION — About Us: Company story, values, and a visual element (image or illustrated graphic placeholder). Split layout or centered text with image.",
     faq: "SECTION — FAQ: Accordion or clearly separated Q&A pairs. Each question bold, answer in normal weight below.",
     process:
-      'SECTION — Process ("So läuft\'s ab"): Numbered steps (1, 2, 3, 4) with a lucide-react icon per step and a short description. Horizontal on desktop, vertical on mobile.',
+      'SECTION — Process ("So läuft\'s ab"): Numbered steps (1, 2, 3, 4) with an inline SVG icon per step and a short description. Horizontal on desktop, vertical on mobile.',
     gallery:
-      "SECTION — Gallery/Portfolio: Image grid with uniform aspect ratio (use picsum.photos placeholders). Hover overlay with a subtle darkening effect.",
+      "SECTION — Gallery/Portfolio: Image grid with uniform aspect ratio using local /assets/ image paths. Hover overlay with a subtle darkening effect.",
     blog: "SECTION — Blog/News Preview: 3 article preview cards — cover image placeholder, category tag, title, short excerpt (1–2 lines), and publication date.",
     pricing:
       "SECTION — Pricing: 2–3 pricing plan cards. Each card: plan name, price (prominent), feature checklist (✓), CTA button. Highlight one plan as recommended.",
@@ -210,7 +210,7 @@ export const PROMPT_DB = {
       appForm:
         'Application form: include a visible "Jetzt bewerben" CTA linking to /contact or the application URL.',
       benefits:
-        "Benefits: display as a grid of icon+label cards (use lucide-react icons). Make this section visually distinct and appealing.",
+        "Benefits: display as a grid of cards with inline SVG icons and labels. Make this section visually distinct and appealing.",
     },
     handwerk: {
       base: "TRADES: Phone number rendered in header (top right, large) AND in the hero (below the headline, as a tel: link button). Certifications and years of experience in a trust-signal strip.",
@@ -254,16 +254,16 @@ export const PROMPT_DB = {
   // These are added to every prompt regardless of brief content.
 
   always: [
-    'OUTPUT FORMAT: Return only one JSON object with top-level keys "pages", "assets", and "slots".',
+    'OUTPUT FORMAT: Return only one JSON object with top-level keys "pages", "assets", and "slots". No markdown fences (e.g. ```json), no prose.',
     'PAGES CONTRACT: "pages" maps real file names (e.g. index.html, contact.html, team.html) to complete HTML5 documents.',
-    'HTML CONTRACT: Each page must start with <!doctype html> and end with </html>.',
+    'HTML CONTRACT: Each page must start with <!doctype html> and end with </html>. Use plain HTML, CSS in <style> blocks, and vanilla JS only.',
     'MULTI-PAGE NAVIGATION: Use only real file links like /index.html, /contact.html, /team.html.',
     'NAVIGATION FORBIDDEN: Never use hash navigation (#...), router.push(), window.location.hash, or SPA routing.',
-    'SLOTS CONTRACT: Every editable text must include a stable data-slot="section.element" attribute (e.g. hero.title, team.member1.role, contact.email). Do not use random slot IDs.',
-    'ASSETS CONTRACT: All images must use local /assets/... paths and be listed in the "assets" object.',
-    'IMAGE FORBIDDEN: Never use external image URLs.',
-    'TECH CONSTRAINT: Build plain static HTML/CSS/JS pages. Never use React, Tailwind, or any framework output.',
-    'NO EXPLANATIONS: Return JSON only, no prose and no markdown fences.',
+    'SLOTS CONTRACT: EVERY piece of editable text MUST have a data-slot attribute. Example: <h1 data-slot="hero.title">Willkommen</h1>. Slot keys must follow section.element format (e.g. hero.title, hero.subtitle, team.member1.name, contact.email, footer.text, meta.title). No random IDs.',
+    'ASSETS CONTRACT: All images must use local /assets/... paths and be listed in the "assets" object. Example: <img src="/assets/hero.jpg" data-slot="hero.image">',
+    'IMAGE FORBIDDEN: Never use external image URLs (no picsum, no unsplash, no placeholder.com).',
+    'TECH CONSTRAINT: Build plain static HTML/CSS/JS pages only. Never use React, Vue, Angular, Tailwind, Bootstrap, framer-motion, lucide-react, or any JS/CSS framework. The only allowed external CDN resources are: Google Fonts (fonts.googleapis.com) and Leaflet.js (unpkg.com/leaflet) for interactive maps.',
+    'NO EXPLANATIONS: Return JSON only.',
   ],
 };
 
@@ -589,9 +589,9 @@ export const UX_CORE_RULES = `UX, ACCESSIBILITY & PERFORMANCE — apply to every
 
 NAVIGATION & LAYOUT:
 - Smooth scroll: scroll-behavior: smooth on <html>; sticky nav adds padding-top equal to nav height.
-- Active nav link highlighted (color or underline). Deep links update URL on state changes.
+- Active nav link highlighted (color or underline).
 - z-index scale: 10 (content) / 20 (sticky) / 30 (dropdown) / 50 (modal); never arbitrary large values.
-- Use min-h-dvh (not h-screen) on mobile; max-w-prose for reading columns; no horizontal scroll on mobile.
+- Use min-height: 100dvh on mobile; max-width for reading columns; no horizontal scroll on mobile.
 - Reserve space for async content to prevent CLS.
 
 ANIMATION:
@@ -601,11 +601,10 @@ ANIMATION:
 - Easing: ease-out on enter, ease-in on exit; never linear for UI transitions.
 
 INTERACTION & FORMS:
-- Every button/card/link: visible hover state + cursor:pointer. Disabled: opacity-50 + cursor-not-allowed.
-- Visible focus rings: focus:ring-2 focus:ring-offset-2 (keyboard navigation must work).
+- Every button/card/link: visible hover state + cursor: pointer. Disabled: opacity: 0.5 + cursor: not-allowed.
+- Visible focus rings via CSS outline (keyboard navigation must work).
 - Touch targets: min 44×44px; min 8px gap between adjacent interactive elements.
-- Forms: always visible label (never placeholder-only); validate on blur not keystroke; semantic input types (email, tel, number); required fields marked; errors shown inline below field.
-- Confirm destructive actions with a dialog.
+- Forms: always visible label (never placeholder-only); validate on blur; semantic input types (email, tel, number); required fields marked; errors shown inline below field.
 
 ACCESSIBILITY:
 - Minimum 4.5:1 contrast for body text; 3:1 for large text (WCAG AA).
@@ -618,59 +617,52 @@ ACCESSIBILITY:
 TYPOGRAPHY:
 - Body line-height 1.5–1.75; min 16px body text (prevents iOS auto-zoom).
 - Consistent type scale: 12 / 14 / 16 / 18 / 24 / 32 / 48px. Headings clearly differentiated by size + weight.
-- Dark text on light background (slate-900 on white); white on dark (zinc-100 on #111827).
+- Dark text on light background; white text on dark background.
 
 PERFORMANCE:
 - font-display: swap on all web fonts.
 - Lazy-load all below-fold images (loading="lazy"); always declare width + height on images.
-- Code-split by route (dynamic imports); load analytics/third-party scripts async/defer.
-- Use ternary (not &&) when condition can be 0 or NaN to avoid rendering "0" in JSX.
-- useCallback for handlers passed as props; useMemo for expensive computations; React.memo for pure list-item components.
-- Always use functional setState: setState(curr => ...) when new state depends on previous.`;
+- Load analytics/third-party scripts async/defer.`;
 
-// ─── REACT PERFORMANCE PATTERNS (UI/UX PRO MAX v2.5.0) ───────────────────────
+// ─── HTML BEST PRACTICES (always injected) ───────────────────────────────────
 
-export const REACT_PERF_RULES = `REACT COMPONENT BEST PRACTICES:
-- No anonymous functions in JSX (causes unnecessary re-renders on every render).
-- Wrap async-loaded sections in <Suspense fallback={<skeleton />}>.
-- Import lucide-react icons directly: import { IconName } from 'lucide-react' (tree-shaken automatically).
-- Hoist static JSX (non-dynamic markup) to module scope outside the component.
-- Use Set/Map for O(1) membership checks instead of Array.includes in loops.
-- Avoid subscribing to state in callbacks where only the callback uses it (causes extra re-renders).
-- startTransition for non-urgent state updates (e.g. filter/search).`;
+export const HTML_BEST_PRACTICES = `HTML BEST PRACTICES — apply to every page:
+- Use semantic HTML5 elements: <header>, <nav>, <main>, <section>, <article>, <footer>.
+- Every page must be a complete valid HTML5 document: <!doctype html> ... </html>.
+- Use <style> blocks in <head> for all CSS — never inline styles on individual elements.
+- JavaScript (if any): use vanilla JS only, placed in <script> before </body>. No JS libraries (exception: Leaflet.js CDN for maps).
+- Use CSS custom properties (--color-primary, --color-accent) for consistent theming.
+- Responsive layout via CSS Grid and Flexbox; media queries for breakpoints.
+- Never use Tailwind, Bootstrap, or any CSS framework.
+- Never use React, Vue, Angular, or any JavaScript framework.`;
 
 // ─── ICON GUIDELINES ─────────────────────────────────────────────────────────
-// The project uses lucide-react (see ALLOWED IMPORTS in PROMPT_DB.always).
-// Reference icon categories for selection:
+// Always use inline SVG — no icon libraries allowed.
 
-export const ICON_GUIDELINES = `ICONS — use lucide-react (already in ALLOWED IMPORTS):
-- Navigation/UI: Menu, X, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, ExternalLink
-- Action: Plus, Trash2, Pencil, Download, Upload, Copy, Share2, Search, Filter, Settings
-- Status: Check, CheckCircle2, XCircle, AlertTriangle, Info, Loader2 (animate-spin), Clock
-- Communication: Mail, MessageCircle, Phone, Send, Bell
-- User: User, Users, UserPlus, LogIn, LogOut
-- Commerce: ShoppingCart, ShoppingBag, CreditCard, Tag, Gift, Percent
-- Data/Analytics: BarChart2, PieChart, TrendingUp, TrendingDown, Activity, Database
-- Location: MapPin, Map, Compass, Globe
-- Security: Lock, Unlock, Shield, Key, Eye, EyeOff
-- Social: Heart, Star, ThumbsUp, Bookmark, Flag
-Usage: import { IconName } from 'lucide-react'; render as <IconName size={20} className="..." />`;
+export const ICON_GUIDELINES = `ICONS — use inline SVG only. Never use any icon library (no lucide-react, no Font Awesome):
+- Embed SVG icons directly in HTML using <svg> elements with width/height attributes.
+- Navigation/UI: draw simple SVG paths for menu (hamburger), X (close), chevrons, arrows.
+- Status: use Unicode ✓ (check), ✗ (cross), ⚠ (warning), ℹ (info) or simple inline SVG.
+- Communication: inline SVG for mail envelope, phone, send icons.
+- Location: inline SVG for map-pin, globe icons.
+- Keep SVG icons small (24×24px) and use currentColor for fill/stroke so they inherit text color.
+- For interactive maps: use OpenStreetMap/Leaflet.js loaded from CDN (no install required).`;
 
 // ─── SECTION-LEVEL DESIGN PATTERNS (UI/UX PRO MAX v2.5.0) ───────────────────
 
 export const SECTION_DESIGN_PATTERNS = `SECTION-LEVEL DESIGN SYSTEM:
 - Hero CTA buttons: primary = solid brand color, secondary = outline or ghost. Never more than 2 CTAs in the hero.
-- Cards: consistent border-radius matching chosen shape language; subtle shadow (shadow-sm or shadow-md); hover: slight lift (translateY(-2px) + shadow-lg).
-- Stats/numbers: use tabular-nums font-variant; large bold number + smaller label below; high contrast strip (brand bg or dark).
+- Cards: consistent border-radius matching chosen shape language; subtle box-shadow; hover: slight lift (transform: translateY(-2px) + stronger box-shadow).
+- Stats/numbers: font-variant-numeric: tabular-nums; large bold number + smaller label below; high contrast strip (brand bg or dark).
 - Testimonial cards: blockquote with left border accent OR card with star rating on top; author name + optional company in muted text.
-- Process steps: numbered circle (brand color) + icon + short text; horizontal on desktop (flex-row), vertical stack on mobile.
-- Pricing cards: 3-column grid; middle "recommended" card elevated (scale-105 or border-2 accent + "Empfohlen" badge); feature list with check icons.
-- FAQ: accordion pattern; question bold with ChevronDown icon; answer slides open; border-b separators.
+- Process steps: numbered circle (brand color) + inline SVG icon + short text; horizontal on desktop (display: flex; flex-direction: row), vertical stack on mobile.
+- Pricing cards: 3-column grid; middle "recommended" card elevated (transform: scale(1.05) or border: 2px solid accent + "Empfohlen" badge); feature list with check marks.
+- FAQ: accordion pattern using CSS + minimal JS; question bold; answer slides open; border-bottom separators.
 - Gallery: CSS grid with aspect-ratio: 4/3 uniform tiles; hover: overlay with darkening + optional icon.
-- Partner logos: grayscale (filter: grayscale(100%)) on default, color on hover; horizontal scrolling strip.
+- Partner logos: filter: grayscale(100%) on default, filter: none on hover; horizontal scrolling strip.
 - Footer: dark background; 3–4 columns (links / contact / social / legal); Impressum + Datenschutz always in last column.
 
 RESPONSIVE GRID:
 - 1 column on mobile (<640px), 2 columns on tablet (≥768px), 3–4 columns on desktop (≥1024px).
-- Use CSS Grid with auto-fill/auto-fit minmax for card grids (responsive without breakpoint overrides).
-- Navbar: hamburger menu on mobile; full horizontal links on desktop (hidden md:flex pattern with Tailwind).`;
+- Use CSS Grid with auto-fill/auto-fit minmax() for card grids (responsive without extra breakpoint overrides).
+- Navbar: hamburger button on mobile (toggle with vanilla JS); full horizontal links on desktop (display:none / display:flex via media query).`;
