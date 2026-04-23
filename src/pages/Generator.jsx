@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,10 +9,53 @@ import {
   Copy,
   ChevronDown,
 } from "lucide-react";
+import JSZip from "jszip";
 
 const API_URL = "https://websiteai-backend-production.up.railway.app";
 const BLOB_URL_REVOKE_DELAY_MS = 10000;
 const FALLBACK_PAGE_NAME = "website-preview.html";
+const PREVIEW_BRIDGE_SCRIPT = `
+<script>
+  (function () {
+    const normalize = (href) => {
+      const value = String(href || "").trim();
+      if (!value) return null;
+      const lower = value.toLowerCase();
+      if (
+        lower.startsWith("http:") ||
+        lower.startsWith("https:") ||
+        lower.startsWith("mailto:") ||
+        lower.startsWith("tel:") ||
+        lower.startsWith("javascript:") ||
+        lower.startsWith("#") ||
+        lower.startsWith("//")
+      ) {
+        return null;
+      }
+      let normalized = value.split("#")[0].split("?")[0].trim();
+      if (!normalized || normalized === "/") return "index.html";
+      if (normalized.startsWith("/")) normalized = normalized.slice(1);
+      if (normalized.startsWith("./")) normalized = normalized.slice(2);
+      if (/^[a-z0-9-]+\\.html$/i.test(normalized)) return normalized;
+      return null;
+    };
+
+    document.addEventListener("click", (event) => {
+      const anchor =
+        event.target && event.target.closest
+          ? event.target.closest("a[href]")
+          : null;
+      if (!anchor) return;
+      const page = normalize(anchor.getAttribute("href"));
+      if (!page) return;
+      event.preventDefault();
+      window.parent.postMessage(
+        { type: "websiteai:preview-nav", page },
+        __PARENT_ORIGIN__
+      );
+    });
+  })();
+</script>`;
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -696,6 +739,7 @@ function StepGenerate({
   const [copied, setCopied] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const [previewMode, setPreviewMode] = useState("desktop");
+  const iframeRef = useRef(null);
   const selectedPage =
     pages.find((page) => page.name === activePage) ?? pages[0] ?? null;
 
@@ -707,6 +751,41 @@ function StepGenerate({
     if (lower.includes("<html") || lower.includes("<!doctype")) return htmlContent;
     return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body>${htmlContent}</body></html>`;
   })();
+
+  const previewHtml = (() => {
+    if (!normalizedHtml) return "";
+    const bridgeScript = PREVIEW_BRIDGE_SCRIPT.replace(
+      "__PARENT_ORIGIN__",
+      JSON.stringify(window.location.origin)
+    );
+    if (normalizedHtml.includes("</body>")) {
+      return normalizedHtml.replace("</body>", `${bridgeScript}</body>`);
+    }
+    return `${normalizedHtml}${bridgeScript}`;
+  })();
+
+  useEffect(() => {
+    const handlePreviewNavigation = (event) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      const payload = event.data;
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        payload.type !== "websiteai:preview-nav" ||
+        typeof payload.page !== "string"
+      ) {
+        return;
+      }
+      const targetPage = payload.page.trim();
+      if (!/^[a-z0-9-]+\.html$/i.test(targetPage)) return;
+      const match = pages.find((page) => page.name === targetPage);
+      if (!match) return;
+      onSelectPage(match.name);
+      setFrameKey((value) => value + 1);
+    };
+    window.addEventListener("message", handlePreviewNavigation);
+    return () => window.removeEventListener("message", handlePreviewNavigation);
+  }, [pages, onSelectPage]);
 
   const copy = () => {
     if (!htmlContent) return;
@@ -736,21 +815,27 @@ function StepGenerate({
     URL.revokeObjectURL(url);
   };
 
-  const downloadAllHtml = () => {
+  const downloadAllHtml = async () => {
     if (pages.length === 0) return;
-    pages.forEach((page) => {
-      const pageHtml = page.html?.trim();
-      if (!pageHtml) return;
-      const blob = new Blob([pageHtml], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
+    try {
+      const zip = new JSZip();
+      pages.forEach((page) => {
+        const pageHtml = page.html?.trim();
+        if (!pageHtml) return;
+        zip.file(page.name, pageHtml);
+      });
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = page.name;
+      a.download = "website-pages.zip";
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    });
+    } catch (downloadError) {
+      console.error("Failed to download all pages", downloadError);
+    }
   };
 
   return (
@@ -904,9 +989,10 @@ function StepGenerate({
             }`}
           >
             <iframe
+              ref={iframeRef}
               key={frameKey}
               title="Generated website preview"
-              srcDoc={normalizedHtml}
+              srcDoc={previewHtml}
               // Intentionally no allow-same-origin to keep preview isolated.
               sandbox="allow-scripts allow-forms"
               className="h-full w-full border-0"
