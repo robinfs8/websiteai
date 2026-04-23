@@ -14,6 +14,45 @@ import JSZip from "jszip";
 const API_URL = "https://websiteai-backend-production.up.railway.app";
 const BLOB_URL_REVOKE_DELAY_MS = 10000;
 const FALLBACK_PAGE_NAME = "website-preview.html";
+const PREVIEW_BRIDGE_SCRIPT = `
+<script>
+  (function () {
+    const normalize = (href) => {
+      const value = String(href || "").trim();
+      if (!value) return null;
+      const lower = value.toLowerCase();
+      if (
+        lower.startsWith("http:") ||
+        lower.startsWith("https:") ||
+        lower.startsWith("mailto:") ||
+        lower.startsWith("tel:") ||
+        lower.startsWith("javascript:") ||
+        lower.startsWith("#") ||
+        lower.startsWith("//")
+      ) {
+        return null;
+      }
+      let normalized = value.split("#")[0].split("?")[0].trim();
+      if (!normalized || normalized === "/") return "index.html";
+      if (normalized.startsWith("/")) normalized = normalized.slice(1);
+      if (normalized.startsWith("./")) normalized = normalized.slice(2);
+      if (/^[a-z0-9-]+\\.html$/i.test(normalized)) return normalized;
+      return null;
+    };
+
+    document.addEventListener("click", (event) => {
+      const anchor =
+        event.target && event.target.closest
+          ? event.target.closest("a[href]")
+          : null;
+      if (!anchor) return;
+      const page = normalize(anchor.getAttribute("href"));
+      if (!page) return;
+      event.preventDefault();
+      window.parent.postMessage({ type: "websiteai:preview-nav", page }, "*");
+    });
+  })();
+</script>`;
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -712,16 +751,16 @@ function StepGenerate({
 
   const previewHtml = (() => {
     if (!normalizedHtml) return "";
-    const bridgeScript = `<script>(function(){const normalize=(href)=>{const value=String(href||"").trim();if(!value)return null;const lower=value.toLowerCase();if(lower.startsWith("http:")||lower.startsWith("https:")||lower.startsWith("mailto:")||lower.startsWith("tel:")||lower.startsWith("javascript:")||lower.startsWith("#")||lower.startsWith("//"))return null;let normalized=value.split("#")[0].split("?")[0].trim();if(!normalized||normalized==="/")return "index.html";if(normalized.startsWith("/"))normalized=normalized.slice(1);if(normalized.startsWith("./"))normalized=normalized.slice(2);if(/^[a-z0-9-]+\\.html$/i.test(normalized))return normalized;return null;};document.addEventListener("click",(event)=>{const anchor=event.target&&event.target.closest?event.target.closest("a[href]"):null;if(!anchor)return;const page=normalize(anchor.getAttribute("href"));if(!page)return;event.preventDefault();window.parent.postMessage({type:"websiteai:preview-nav",page},"*");});})();</script>`;
     if (normalizedHtml.includes("</body>")) {
-      return normalizedHtml.replace("</body>", `${bridgeScript}</body>`);
+      return normalizedHtml.replace("</body>", `${PREVIEW_BRIDGE_SCRIPT}</body>`);
     }
-    return `${normalizedHtml}${bridgeScript}`;
+    return `${normalizedHtml}${PREVIEW_BRIDGE_SCRIPT}`;
   })();
 
   useEffect(() => {
     const handlePreviewNavigation = (event) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
+      if (event.origin !== "null") return;
       const payload = event.data;
       if (!payload || payload.type !== "websiteai:preview-nav") return;
       const targetPage = String(payload.page || "").trim();
