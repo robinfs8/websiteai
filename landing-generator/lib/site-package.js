@@ -1,3 +1,5 @@
+const SLOT_KEY_PATTERN = /^[a-z0-9]+(?:\.[a-z0-9]+)+$/;
+
 function extractJsonCandidate(raw) {
   const text = String(raw ?? "").trim();
   if (!text) throw new Error("empty model response");
@@ -18,12 +20,7 @@ function isPlainObject(value) {
 }
 
 function findAllMatches(text, regex) {
-  const out = [];
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    out.push(match);
-  }
-  return out;
+  return [...String(text).matchAll(regex)];
 }
 
 function validatePageHtml(fileName, html) {
@@ -81,7 +78,7 @@ export function parseAndValidateSitePackage(raw) {
   const assetKeysInPages = new Set();
 
   for (const [fileName, html] of Object.entries(pages)) {
-    if (!/^[a-z0-9-]+\.html$/i.test(fileName)) {
+    if (!/^[a-z0-9-]+\.html$/.test(fileName)) {
       throw new Error(`invalid page filename "${fileName}" (must end with .html)`);
     }
     if (typeof html !== "string" || !html.trim()) {
@@ -92,7 +89,7 @@ export function parseAndValidateSitePackage(raw) {
 
     const slotMatches = findAllMatches(
       html,
-      /data-slot\s*=\s*["']([a-z0-9]+(?:\.[a-z0-9]+)+)["']/gi,
+      /data-slot\s*=\s*["']([a-z0-9]+(?:\.[a-z0-9]+)+)["']/g,
     );
     for (const slotMatch of slotMatches) {
       slotKeysInPages.add(slotMatch[1]);
@@ -124,9 +121,8 @@ export function parseAndValidateSitePackage(raw) {
     throw new Error("at least one data-slot must be present in pages HTML");
   }
 
-  const slotKeyPattern = /^[a-z0-9]+(?:\.[a-z0-9]+)+$/;
   for (const [slotKey, defaultText] of Object.entries(slots)) {
-    if (!slotKeyPattern.test(slotKey)) {
+    if (!SLOT_KEY_PATTERN.test(slotKey)) {
       throw new Error(
         `invalid slot key "${slotKey}" (must match section.element format)`,
       );
