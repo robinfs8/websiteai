@@ -113,113 +113,120 @@ function extractPagesFromResponse(json) {
 // ─── Schema options ───────────────────────────────────────────────────────────
 
 const INDUSTRIES = [
-  { value: "software", label: "Software / SaaS" },
-  { value: "agency", label: "Agency" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "cafe", label: "Café" },
-  { value: "yoga", label: "Yoga / Wellness" },
-  { value: "fitness", label: "Fitness / Gym" },
-  { value: "handwerk", label: "Trades / Handwerk" },
-  { value: "personal", label: "Personal Brand" },
-  { value: "ecommerce", label: "E-Commerce" },
-  { value: "personaldienst", label: "Recruitment / HR" },
-  { value: "other", label: "Other" },
+  { value: "tech", label: "Tech" },
+  { value: "agency", label: "Agentur / Dienstleistung" },
+  { value: "handwerk", label: "Lokales Handwerk / Servicebetrieb" },
+  { value: "health", label: "Gesundheitsbereich" },
+  { value: "gastro", label: "Gastronomie" },
+  { value: "sport", label: "Sport" },
+  { value: "brand", label: "Marke" },
+  { value: "industry", label: "Industrie / Technik" },
+  { value: "realestate", label: "Immobilien" },
+  { value: "education", label: "Bildung" },
+  { value: "event", label: "Event / Community" },
+  { value: "nonprofit", label: "Non-Profit" },
+  { value: "corporate", label: "Corporate" },
+  { value: "portfolio", label: "Portfolio" },
 ];
 
-const STYLES = [
+const DESIGN_DIRECTIONS = [
+  { value: "minimal", label: "Minimal" },
   { value: "modern", label: "Modern" },
-  { value: "minimal", label: "Minimal" },
   { value: "brutalist", label: "Brutalist" },
-  { value: "classic", label: "Classic" },
+  { value: "luxury", label: "Luxury" },
   { value: "playful", label: "Playful" },
-  { value: "editorial", label: "Editorial" },
-  { value: "glassmorphism", label: "Glassmorphism" },
+  { value: "standard", label: "Standard" },
 ];
 
-const LEVELS = [
-  { value: "super-modern", label: "Cutting-edge" },
-  { value: "mid", label: "Contemporary" },
-  { value: "basic", label: "Clean & Simple" },
-];
-
-const SHAPES = [
-  { value: "round", label: "Rounded" },
-  { value: "mixed", label: "Mixed" },
-  { value: "angular", label: "Angular" },
-];
-
-const TONES = [
-  { value: "professional", label: "Professional" },
-  { value: "casual", label: "Casual" },
-  { value: "playful", label: "Playful" },
-  { value: "formal", label: "Formal" },
-  { value: "youthful", label: "Youthful" },
-  { value: "luxurious", label: "Luxurious" },
-];
-
-const IMAGERY = [
-  { value: "photos", label: "Photography" },
-  { value: "illustrations", label: "Illustrations" },
-  { value: "abstract", label: "Abstract / Geometric" },
-  { value: "minimal", label: "Minimal" },
-  { value: "none", label: "None" },
-];
-
-const ANIMATIONS = [
-  { value: "none", label: "None" },
-  { value: "subtle", label: "Subtle" },
-  { value: "moderate", label: "Moderate" },
-  { value: "heavy", label: "Heavy" },
-];
-
-const HERO_STYLES = [
-  { value: "fullscreen-image", label: "Fullscreen Image" },
-  { value: "split", label: "Split (text + visual)" },
-  { value: "video-bg", label: "Video Background" },
-  { value: "text-only", label: "Text Only" },
-];
-
-const LAYOUTS = [
-  { value: "airy", label: "Airy (lots of whitespace)" },
-  { value: "balanced", label: "Balanced" },
-  { value: "dense", label: "Dense (information-rich)" },
+const SHAPE_LANGUAGE = [
+  { value: "rounded", label: "Rounded" },
+  { value: "sharp", label: "Sharp" },
 ];
 
 const CTAS = [
-  { value: "contact", label: "Contact Us" },
-  { value: "call", label: "Call Now" },
-  { value: "book", label: "Book Appointment" },
-  { value: "buy", label: "Buy Now" },
-  { value: "demo", label: "Request Demo" },
-];
-
-const AUDIENCE_TYPES = [
-  { value: "B2C", label: "B2C (consumers)" },
-  { value: "B2B", label: "B2B (businesses)" },
-  { value: "both", label: "Both" },
-];
-
-const SHOW_PRICES = [
-  { value: "yes", label: "Show exact prices" },
-  { value: "no", label: "Hide prices" },
-  { value: "from", label: '"Starting from" prices' },
-  { value: "packages", label: "Package pricing" },
+  { value: "call", label: "Anrufen" },
+  { value: "book", label: "Termin buchen" },
+  { value: "contact", label: "Kontaktformular" },
+  { value: "buy", label: "Kaufen" },
+  { value: "demo", label: "Demo buchen" },
 ];
 
 const SECTION_OPTIONS = [
-  { key: "about", label: "About Us" },
-  { key: "team", label: "Team" },
-  { key: "testimonials", label: "Testimonials" },
-  { key: "faq", label: "FAQ" },
-  { key: "process", label: "Process Steps" },
-  { key: "gallery", label: "Gallery / Portfolio" },
-  { key: "blog", label: "Blog Preview" },
-  { key: "pricing", label: "Pricing" },
-  { key: "compareTable", label: "Comparison Table" },
-  { key: "stats", label: "Stats Banner" },
-  { key: "careers", label: "Careers / Jobs" },
-  { key: "locations", label: "Locations" },
-  { key: "partnerLogos", label: "Partner Logos" },
+  {
+    key: "about",
+    label: "Über uns / Story",
+    contentField: "story",
+    placeholder: "Erzähle die Geschichte deines Unternehmens…",
+  },
+  {
+    key: "team",
+    label: "Team",
+    contentField: "members",
+    placeholder:
+      "Namen & kurze Beschreibung der Teammitglieder (ein Eintrag pro Zeile)…",
+  },
+  {
+    key: "testimonials",
+    label: "Testimonials / Reviews",
+    contentField: "reviews",
+    placeholder: "Kundenbewertungen eintragen…",
+  },
+  {
+    key: "process",
+    label: "How it works / Prozess",
+    contentField: "description",
+    placeholder: "Beschreibe den Prozess kurz (Schritt für Schritt)…",
+  },
+  {
+    key: "portfolio",
+    label: "Portfolio / Projekte",
+    contentField: "projects",
+    placeholder:
+      "Kurze Texte zu Projekten (Bilder/Screenshots können später ergänzt werden)…",
+  },
+  {
+    key: "pricing",
+    label: "Pricing / Leistungen",
+    contentField: "details",
+    placeholder: "Preise und was inklusive ist…",
+  },
+  {
+    key: "comparison",
+    label: "Vergleich / Features vs. Konkurrenz",
+    contentField: "data",
+    placeholder: "Vergleichsdaten eintragen…",
+  },
+  {
+    key: "stats",
+    label: "Key Stats / Zahlen & Trust",
+    contentField: "data",
+    placeholder:
+      "Wichtige Zahlen eintragen (z. B. 500+ Kunden, 10 Jahre Erfahrung)…",
+  },
+  {
+    key: "faq",
+    label: "FAQ",
+    contentField: null,
+    placeholder: null,
+  },
+  {
+    key: "careers",
+    label: "Karriere / Jobs",
+    contentField: "jobs",
+    placeholder: "Offene Stellen, Bezahlung und weitere Infos…",
+  },
+  {
+    key: "locations",
+    label: "Standorte / Filialen",
+    contentField: "addresses",
+    placeholder: "Adressen der Standorte…",
+  },
+  {
+    key: "partners",
+    label: "Partner / Logos / Integrationen",
+    contentField: "names",
+    placeholder: "Partner- und Integrationsnamen eintragen…",
+  },
 ];
 
 const SOCIAL_FIELDS = [
@@ -228,51 +235,53 @@ const SOCIAL_FIELDS = [
   { key: "tiktok", label: "TikTok" },
   { key: "facebook", label: "Facebook" },
   { key: "youtube", label: "YouTube" },
-  { key: "x", label: "X / Twitter" },
 ];
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
+const initialSections = Object.fromEntries(
+  SECTION_OPTIONS.map((s) => [
+    s.key,
+    s.contentField
+      ? { enabled: false, [s.contentField]: "" }
+      : { enabled: false },
+  ])
+);
+
 const initialBrief = {
   basics: {
-    name: "",
+    companyName: "",
     industry: "",
-    tagline: "",
+    slogan: "",
     description: "",
-    usp: "",
-    audience: { type: "B2C", ageRange: "", notes: "" },
   },
   design: {
-    style: "modern",
-    level: "mid",
-    shape: "round",
-    tone: "professional",
-    imagery: "photos",
-    animations: "subtle",
-    heroStyle: "split",
-    layout: "balanced",
+    colors: "",
+    shapeLanguage: "rounded",
+    designDirection: "modern",
     darkMode: false,
-    colors: { primary: "", secondary: "", accent: "" },
   },
-  sections: Object.fromEntries(SECTION_OPTIONS.map((s) => [s.key, false])),
-  offering: { showPrices: "no", openingHours: "", specials: "" },
+  sections: initialSections,
   contact: {
-    primaryCta: "contact",
+    primaryCta: "",
     phone: "",
     email: "",
     address: "",
-    whatsapp: false,
     social: Object.fromEntries(SOCIAL_FIELDS.map((s) => [s.key, ""])),
+    furtherLinks: "",
+    openingHours: "",
+    specials: "",
   },
-  freeText: "",
+  extras: "",
 };
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
 
-function Label({ children }) {
+function Label({ children, hint }) {
   return (
     <label className="block text-sm font-medium text-white/70 mb-1.5">
       {children}
+      {hint && <span className="ml-1.5 text-white/30 font-normal">{hint}</span>}
     </label>
   );
 }
@@ -301,7 +310,7 @@ function Textarea({ value, onChange, placeholder, rows = 3 }) {
   );
 }
 
-function Select({ value, onChange, options }) {
+function Select({ value, onChange, options, placeholder = "Auswählen…" }) {
   return (
     <div className="relative">
       <select
@@ -310,7 +319,7 @@ function Select({ value, onChange, options }) {
         className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-white/30 transition-colors cursor-pointer pr-10"
       >
         <option value="" disabled className="bg-[#0a0a14] text-white/50">
-          Select…
+          {placeholder}
         </option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value} className="bg-[#0a0a14]">
@@ -368,22 +377,25 @@ function SegmentedControl({ value, onChange, options }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label hint={hint}>{label}</Label>
       {children}
     </div>
   );
 }
 
-function SectionCard({ title, children }) {
+function SectionCard({ title, subtitle, children }) {
   return (
     <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-6 space-y-5">
       {title && (
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-white/40">
-          {title}
-        </h3>
+        <div className="space-y-1">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-white/40">
+            {title}
+          </h3>
+          {subtitle && <p className="text-sm text-white/30">{subtitle}</p>}
+        </div>
       )}
       {children}
     </div>
@@ -395,73 +407,46 @@ function SectionCard({ title, children }) {
 function StepBasics({ brief, update }) {
   const b = brief.basics;
   const set = (key) => (val) => update("basics", { ...b, [key]: val });
-  const setAudience = (key) => (val) =>
-    update("basics", { ...b, audience: { ...b.audience, [key]: val } });
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Company">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Company / Brand name *">
-            <Input
-              value={b.name}
-              onChange={set("name")}
-              placeholder="Acme GmbH"
-            />
-          </Field>
-          <Field label="Industry *">
-            <Select
-              value={b.industry}
-              onChange={set("industry")}
-              options={INDUSTRIES}
-            />
-          </Field>
-        </div>
-        <Field label="Tagline">
+      <SectionCard title="Dein Unternehmen">
+        <Field label="Name des Unternehmens *">
           <Input
-            value={b.tagline}
-            onChange={set("tagline")}
-            placeholder="Short, punchy headline for the hero"
+            value={b.companyName}
+            onChange={set("companyName")}
+            placeholder="z. B. Müller GmbH"
           />
         </Field>
-        <Field label="Description">
-          <Textarea
-            value={b.description}
-            onChange={set("description")}
-            placeholder="What does this business do? Who does it serve?"
-            rows={3}
-          />
-        </Field>
-        <Field label="Unique Selling Point (USP)">
-          <Textarea
-            value={b.usp}
-            onChange={set("usp")}
-            placeholder="What makes this business different from competitors?"
-            rows={2}
+
+        <Field label="Unternehmensbereich *">
+          <Select
+            value={b.industry}
+            onChange={set("industry")}
+            options={INDUSTRIES}
+            placeholder="Bereich auswählen…"
           />
         </Field>
       </SectionCard>
 
-      <SectionCard title="Audience">
-        <Field label="Target audience type">
-          <SegmentedControl
-            value={b.audience.type}
-            onChange={setAudience("type")}
-            options={AUDIENCE_TYPES}
+      <SectionCard
+        title="Beschreibung"
+        subtitle="Wie soll sich dein Unternehmen vorstellen?"
+      >
+        <Field label="Slogan" hint="(optional – 1 Satz im Hero)">
+          <Input
+            value={b.slogan}
+            onChange={set("slogan")}
+            placeholder="z. B. Wir bauen Websites, die begeistern."
           />
         </Field>
-        <Field label="Age range (optional)">
-          <Input
-            value={b.audience.ageRange}
-            onChange={setAudience("ageRange")}
-            placeholder="e.g. 25–45"
-          />
-        </Field>
-        <Field label="Audience notes (optional)">
-          <Input
-            value={b.audience.notes}
-            onChange={setAudience("notes")}
-            placeholder="e.g. tech-savvy professionals, local families…"
+
+        <Field label="Kurzbeschreibung" hint="(2–3 Sätze: Wer seid ihr, was macht ihr?)">
+          <Textarea
+            value={b.description}
+            onChange={set("description")}
+            placeholder="z. B. Wir sind eine Digitalagentur aus Berlin und helfen kleinen Unternehmen dabei, online sichtbar zu werden…"
+            rows={4}
           />
         </Field>
       </SectionCard>
@@ -472,104 +457,44 @@ function StepBasics({ brief, update }) {
 function StepDesign({ brief, update }) {
   const d = brief.design;
   const set = (key) => (val) => update("design", { ...d, [key]: val });
-  const setColor = (key) => (val) =>
-    update("design", { ...d, colors: { ...d.colors, [key]: val } });
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Style">
-        <Field label="Design style">
-          <SegmentedControl
-            value={d.style}
-            onChange={set("style")}
-            options={STYLES}
+      <SectionCard title="Farben & Form">
+        <Field
+          label="Farbe / Farbkombination"
+          hint="(optional – Logofarben, Hexcodes, Beschreibung)"
+        >
+          <Input
+            value={d.colors}
+            onChange={set("colors")}
+            placeholder="z. B. Dunkelblau #1a2e5a + Gold #c9a84c, oder: Grün & Weiß"
           />
         </Field>
-        <Field label="Sophistication level">
+
+        <Field label="Formensprache">
           <SegmentedControl
-            value={d.level}
-            onChange={set("level")}
-            options={LEVELS}
-          />
-        </Field>
-        <Field label="Shape language">
-          <SegmentedControl
-            value={d.shape}
-            onChange={set("shape")}
-            options={SHAPES}
-          />
-        </Field>
-        <Field label="Communication tone">
-          <SegmentedControl
-            value={d.tone}
-            onChange={set("tone")}
-            options={TONES}
+            value={d.shapeLanguage}
+            onChange={set("shapeLanguage")}
+            options={SHAPE_LANGUAGE}
           />
         </Field>
       </SectionCard>
 
-      <SectionCard title="Layout & Visuals">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Imagery type">
-            <Select
-              value={d.imagery}
-              onChange={set("imagery")}
-              options={IMAGERY}
-            />
-          </Field>
-          <Field label="Animations">
-            <Select
-              value={d.animations}
-              onChange={set("animations")}
-              options={ANIMATIONS}
-            />
-          </Field>
-          <Field label="Hero style">
-            <Select
-              value={d.heroStyle}
-              onChange={set("heroStyle")}
-              options={HERO_STYLES}
-            />
-          </Field>
-          <Field label="Layout density">
-            <Select
-              value={d.layout}
-              onChange={set("layout")}
-              options={LAYOUTS}
-            />
-          </Field>
-        </div>
+      <SectionCard title="Designrichtung">
+        <Field label="Stil">
+          <SegmentedControl
+            value={d.designDirection}
+            onChange={set("designDirection")}
+            options={DESIGN_DIRECTIONS}
+          />
+        </Field>
+
         <Toggle
           checked={d.darkMode}
           onChange={set("darkMode")}
-          label="Dark mode"
+          label="Dark Mode"
         />
-      </SectionCard>
-
-      <SectionCard title="Colors (optional — leave blank to auto-select)">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { key: "primary", label: "Primary" },
-            { key: "secondary", label: "Secondary" },
-            { key: "accent", label: "Accent" },
-          ].map(({ key, label }) => (
-            <Field key={key} label={label}>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="color"
-                  value={d.colors[key] || "#6366f1"}
-                  onChange={(e) => setColor(key)(e.target.value)}
-                  className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0 p-0.5"
-                />
-                <Input
-                  value={d.colors[key]}
-                  onChange={setColor(key)}
-                  placeholder="#6366f1"
-                />
-              </div>
-            </Field>
-          ))}
-        </div>
       </SectionCard>
     </div>
   );
@@ -577,72 +502,76 @@ function StepDesign({ brief, update }) {
 
 function StepSections({ brief, update }) {
   const sections = brief.sections;
-  const toggle = (key) =>
-    update("sections", { ...sections, [key]: !sections[key] });
+
+  const toggleSection = (key) => {
+    const current = sections[key];
+    update("sections", { ...sections, [key]: { ...current, enabled: !current.enabled } });
+  };
+
+  const setSectionContent = (key, field) => (val) => {
+    const current = sections[key];
+    update("sections", { ...sections, [key]: { ...current, [field]: val } });
+  };
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Optional sections">
-        <p className="text-sm text-white/40 -mt-2">
-          The hero, navbar, contact page, and footer are always included.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SECTION_OPTIONS.map(({ key, label }) => (
-            <label
-              key={key}
-              onClick={() => toggle(key)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-                sections[key]
-                  ? "bg-indigo-500/15 border-indigo-400/40 text-white"
-                  : "bg-white/3 border-white/8 text-white/50 hover:border-white/20 hover:text-white/70"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
-                  sections[key] ? "bg-indigo-500" : "bg-white/10"
-                }`}
-              >
-                {sections[key] && (
-                  <Check size={10} strokeWidth={3} className="text-white" />
+      <SectionCard
+        title="Sektionen auswählen"
+        subtitle="Header, Navbar, CTA und Footer sind immer enthalten."
+      >
+        <div className="space-y-2">
+          {SECTION_OPTIONS.map(({ key, label, contentField, placeholder }) => {
+            const section = sections[key];
+            const isEnabled = section.enabled;
+
+            return (
+              <div key={key} className="overflow-hidden rounded-xl border border-white/8 transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection(key)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 cursor-pointer transition-all text-left ${
+                    isEnabled
+                      ? "bg-indigo-500/12 border-b border-indigo-400/20"
+                      : "bg-white/[0.02] hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isEnabled ? "bg-indigo-500" : "bg-white/10"
+                    }`}
+                  >
+                    {isEnabled && (
+                      <Check size={10} strokeWidth={3} className="text-white" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-sm font-medium transition-colors ${
+                      isEnabled ? "text-white" : "text-white/50"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                  {key === "faq" && isEnabled && (
+                    <span className="ml-auto text-xs text-indigo-400/70">
+                      KI erstellt automatisch
+                    </span>
+                  )}
+                </button>
+
+                {isEnabled && contentField && (
+                  <div className="px-4 py-3 bg-indigo-500/5">
+                    <Textarea
+                      value={section[contentField] ?? ""}
+                      onChange={setSectionContent(key, contentField)}
+                      placeholder={placeholder}
+                      rows={3}
+                    />
+                  </div>
                 )}
               </div>
-              <span className="text-sm font-medium">{label}</span>
-            </label>
-          ))}
+            );
+          })}
         </div>
-      </SectionCard>
-
-      <SectionCard title="Offering & Content">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Show prices">
-            <Select
-              value={brief.offering.showPrices}
-              onChange={(val) =>
-                update("offering", { ...brief.offering, showPrices: val })
-              }
-              options={SHOW_PRICES}
-            />
-          </Field>
-          <Field label="Opening hours (optional)">
-            <Input
-              value={brief.offering.openingHours}
-              onChange={(val) =>
-                update("offering", { ...brief.offering, openingHours: val })
-              }
-              placeholder="Mon–Fri 9–18, Sat 10–14"
-            />
-          </Field>
-        </div>
-        <Field label="Specials / promotions (optional)">
-          <Textarea
-            value={brief.offering.specials}
-            onChange={(val) =>
-              update("offering", { ...brief.offering, specials: val })
-            }
-            placeholder="e.g. Happy Hour Mon–Thu 17–19, 2-for-1 cocktails"
-            rows={2}
-          />
-        </Field>
       </SectionCard>
     </div>
   );
@@ -656,8 +585,8 @@ function StepContact({ brief, update }) {
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Primary CTA">
-        <Field label="Main call-to-action">
+      <SectionCard title="Call-to-Action">
+        <Field label="Primäres Call-to-Action *">
           <SegmentedControl
             value={c.primaryCta}
             onChange={set("primaryCta")}
@@ -666,17 +595,9 @@ function StepContact({ brief, update }) {
         </Field>
       </SectionCard>
 
-      <SectionCard title="Contact details">
+      <SectionCard title="Kontaktdaten">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Email">
-            <Input
-              value={c.email}
-              onChange={set("email")}
-              placeholder="hello@acme.de"
-              type="email"
-            />
-          </Field>
-          <Field label="Phone">
+          <Field label="Telefonnummer">
             <Input
               value={c.phone}
               onChange={set("phone")}
@@ -684,41 +605,71 @@ function StepContact({ brief, update }) {
               type="tel"
             />
           </Field>
+          <Field label="E-Mail">
+            <Input
+              value={c.email}
+              onChange={set("email")}
+              placeholder="info@firma.de"
+              type="email"
+            />
+          </Field>
         </div>
-        <Field label="Address">
+        <Field label="Adresse">
           <Input
             value={c.address}
             onChange={set("address")}
             placeholder="Musterstraße 1, 10115 Berlin"
           />
         </Field>
-        <Toggle
-          checked={c.whatsapp}
-          onChange={set("whatsapp")}
-          label="WhatsApp button"
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Öffnungszeiten" hint="(optional)">
+            <Input
+              value={c.openingHours}
+              onChange={set("openingHours")}
+              placeholder="Mo–Fr 9–18, Sa 10–14"
+            />
+          </Field>
+          <Field label="Weiterführende Links" hint="(optional, z. B. Terminbuchung)">
+            <Input
+              value={c.furtherLinks}
+              onChange={set("furtherLinks")}
+              placeholder="https://calendly.com/..."
+            />
+          </Field>
+        </div>
+        <Field label="Besondere Angebote / Aktionen" hint="(optional)">
+          <Textarea
+            value={c.specials}
+            onChange={set("specials")}
+            placeholder="z. B. Happy Hour Mo–Do 17–19 Uhr, 2-für-1 Cocktails"
+            rows={2}
+          />
+        </Field>
       </SectionCard>
 
-      <SectionCard title="Social media (optional)">
+      <SectionCard title="Social Media" subtitle="Alle Felder optional.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {SOCIAL_FIELDS.map(({ key, label }) => (
             <Field key={key} label={label}>
               <Input
                 value={c.social[key]}
                 onChange={setSocial(key)}
-                placeholder={`@${label.toLowerCase()}`}
+                placeholder={`@${label.toLowerCase()} oder URL`}
               />
             </Field>
           ))}
         </div>
       </SectionCard>
 
-      <SectionCard title="Additional instructions (optional)">
-        <Field label="Free text — anything the AI should know">
+      <SectionCard
+        title="Branchen-spezifisch"
+        subtitle="Gibt es etwas Besonderes, das die KI wissen soll?"
+      >
+        <Field label="Weitere Wünsche & Hinweise" hint="(optional)">
           <Textarea
-            value={brief.freeText}
-            onChange={(val) => update("freeText", val)}
-            placeholder="e.g. Use Austrian German. The hero background should feel like a mountain sunrise. Include a seasonal menu section for autumn."
+            value={brief.extras}
+            onChange={(val) => update("extras", val)}
+            placeholder="z. B. Speisekarte einfügen, Stundenplan anzeigen, österreichisches Deutsch verwenden, Hero-Hintergrund soll wie ein Sonnenaufgang wirken…"
             rows={4}
           />
         </Field>
@@ -843,36 +794,40 @@ function StepGenerate({
     }
   };
 
+  const enabledSections = Object.entries(brief.sections)
+    .filter(([, v]) => v.enabled)
+    .map(([k]) => SECTION_OPTIONS.find((s) => s.key === k)?.label)
+    .join(", ");
+
   return (
     <div className="space-y-4">
-      <SectionCard title="Brief summary">
+      <SectionCard title="Zusammenfassung">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
           {[
-            { label: "Company", value: brief.basics.name },
+            { label: "Unternehmen", value: brief.basics.companyName },
             {
-              label: "Industry",
-              value: INDUSTRIES.find((i) => i.value === brief.basics.industry)
-                ?.label,
+              label: "Bereich",
+              value: INDUSTRIES.find((i) => i.value === brief.basics.industry)?.label,
             },
             {
-              label: "Style",
-              value: STYLES.find((s) => s.value === brief.design.style)?.label,
+              label: "Design",
+              value: DESIGN_DIRECTIONS.find(
+                (d) => d.value === brief.design.designDirection
+              )?.label,
             },
             {
-              label: "Tone",
-              value: TONES.find((t) => t.value === brief.design.tone)?.label,
+              label: "Form",
+              value: SHAPE_LANGUAGE.find(
+                (s) => s.value === brief.design.shapeLanguage
+              )?.label,
             },
             {
-              label: "Level",
-              value: LEVELS.find((l) => l.value === brief.design.level)?.label,
+              label: "Dark Mode",
+              value: brief.design.darkMode ? "Ja" : "Nein",
             },
             {
-              label: "Sections",
-              value:
-                Object.entries(brief.sections)
-                  .filter(([, v]) => v)
-                  .map(([k]) => SECTION_OPTIONS.find((s) => s.key === k)?.label)
-                  .join(", ") || "Default only",
+              label: "Sektionen",
+              value: enabledSections || "Standard",
             },
           ].map(({ label, value }) => (
             <div key={label} className="space-y-0.5">
@@ -888,7 +843,11 @@ function StepGenerate({
       <div className="flex justify-center">
         <button
           onClick={onGenerate}
-          disabled={loading || !brief.basics.name || !brief.basics.industry}
+          disabled={
+            loading ||
+            !brief.basics.companyName.trim() ||
+            !brief.basics.industry
+          }
           className="flex items-center gap-2.5 px-8 py-3.5 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-2xl transition-colors shadow-lg shadow-indigo-500/20"
         >
           {loading ? (
@@ -896,7 +855,7 @@ function StepGenerate({
           ) : (
             <Sparkles size={18} />
           )}
-          {loading ? "Generating with AI…" : "Generate Website Code"}
+          {loading ? "Website wird generiert…" : "Website generieren"}
         </button>
       </div>
 
@@ -998,7 +957,6 @@ function StepGenerate({
               key={frameKey}
               title="Generated website preview"
               srcDoc={previewHtml}
-              // Intentionally no allow-same-origin to keep preview isolated.
               sandbox="allow-scripts allow-forms"
               className="h-full w-full border-0"
             />
@@ -1011,7 +969,7 @@ function StepGenerate({
 
 // ─── Main Generator ───────────────────────────────────────────────────────────
 
-const STEPS = ["Basics", "Design", "Sections", "Contact", "Generate"];
+const STEPS = ["Basics", "Design", "Sektionen", "Kontakt", "Generieren"];
 
 export default function Generator() {
   const navigate = useNavigate();
@@ -1059,6 +1017,12 @@ export default function Generator() {
   };
 
   const stepProps = { brief, update };
+
+  const canAdvance = () => {
+    if (step === 0)
+      return brief.basics.companyName.trim() && brief.basics.industry;
+    return true;
+  };
 
   return (
     <div className="min-h-screen bg-[#06060f] text-white">
@@ -1150,19 +1114,16 @@ export default function Generator() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 disabled:opacity-0 disabled:pointer-events-none transition-colors"
           >
             <ArrowLeft size={15} />
-            Back
+            Zurück
           </button>
 
           {step < STEPS.length - 1 ? (
             <button
               onClick={() => setStep((s) => s + 1)}
-              disabled={
-                step === 0 &&
-                (!brief.basics.name.trim() || !brief.basics.industry)
-              }
+              disabled={!canAdvance()}
               className="flex items-center gap-2 px-6 py-2.5 bg-white/8 hover:bg-white/14 disabled:opacity-30 disabled:cursor-not-allowed border border-white/10 rounded-xl text-sm font-medium transition-colors"
             >
-              Next
+              Weiter
               <ArrowRight size={15} />
             </button>
           ) : null}

@@ -6,9 +6,9 @@ const SYSTEM_PROMPT = `You are generating a JSON representation of a multi-page 
 Return ONLY JSON in this exact format — no markdown fences, no prose, no explanations:
 {
   "pages": {
-    "index.html": "...full HTML document...",
-    "contact.html": "...full HTML document...",
-    "team.html": "...full HTML document..."
+    "index.html": "<!Doctype html>...full HTML document...</html>",
+    "contact.html": "<!Doctype html>...full HTML document...</html>",
+    "team.html": "<!Doctype html>...full HTML document...</html>"
   },
   "assets": {
     "hero.jpg": "placeholder",
@@ -21,7 +21,7 @@ Return ONLY JSON in this exact format — no markdown fences, no prose, no expla
   }
 }
 RULES:
-- pages = complete HTML5 files (<!doctype html> ... </html>)
+- pages = complete HTML5 files (<!Doctype html> ... </html>)
 - assets = expected images (always "placeholder" as value)
 - slots = editable texts (stable section.element keys)
 
@@ -29,7 +29,7 @@ ABSOLUTE RULES — violation is not acceptable:
 1. Each page must be a complete valid HTML5 document starting with <!doctype html> and ending with </html>.
 2. Pages use ONLY plain HTML, CSS (in <style> blocks), and vanilla JavaScript (in <script> blocks). NO React. NO Vue. NO Angular. NO Tailwind. NO Bootstrap. NO framer-motion. NO lucide-react. NO npm packages.
 3. Navigation must link only to real files: /index.html, /contact.html, /team.html — NEVER hash links, NEVER router.push(), NEVER SPA routing.
-4. EVERY piece of editable text MUST have a data-slot attribute with a stable section.element key.
+4. EVERY piece of text MUST have a data-slot attribute with a stable section.element key.
    Correct: <h1 data-slot="hero.title">Willkommen</h1>
    Correct: <p data-slot="hero.subtitle">Wir bauen Software</p>
    Correct: <img src="/assets/hero.jpg" data-slot="hero.image">
@@ -42,14 +42,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function generateAppCode(userPrompt) {
   const response = await ai.models.generateContent({
     model: MODEL,
-    contents:
-      `${userPrompt}\n\n` +
-      `Generate the website package now. Return ONLY the following JSON structure — no markdown, no prose:\n` +
-      `{\n` +
-      `  "pages": { "index.html": "...full HTML...", "contact.html": "...full HTML...", "team.html": "...full HTML..." },\n` +
-      `  "assets": { "hero.jpg": "placeholder" },\n` +
-      `  "slots": { "hero.title": "...", "hero.subtitle": "..." }\n` +
-      `}`,
+    contents: `${userPrompt}\n\nGenerate the website package now. Return ONLY valid JSON with exactly these top-level keys: "pages", "assets", "slots". No markdown fences, no prose.`,
     config: { systemInstruction: SYSTEM_PROMPT },
   });
   return response.text;

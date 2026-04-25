@@ -1,668 +1,907 @@
-// Predefined prompt snippets, organized by schema section → field → answer value.
-// Each entry maps a user's selection to a concrete LLM instruction.
-// The prompt-builder assembles these into the final prompt — the actual content/quality
-// of each snippet can be refined without touching any other logic.
+// ─────────────────────────────────────────────────────────────────────────────
+// prompt-db.js  —  THE ONLY FILE YOU NEED TO EDIT FOR PROMPTS
+//
+// STRUCTURE
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//  PROMPT_DB
+//  ├── system          → preamble (role/task framing) + footer (final instruction)
+//  ├── basics
+//  │   ├── fields      → label templates for companyName / industry / slogan / description
+//  │   └── industry    → one prompt per industry type
+//  ├── design
+//  │   ├── fields      → label templates for colors / typography
+//  │   ├── shapeLanguage  → rounded | sharp
+//  │   ├── designDirection → minimal | modern | brutalist | luxury | playful | standard
+//  │   └── darkMode    → true | false
+//  ├── sections
+//  │   ├── meta        → structural framing labels (always-on / disabled headers)
+//  │   └── [key]       → fallback snippet per section (used if SECTION_PROMPTS[key] is empty)
+//  ├── cta             → one prompt per CTA type
+//  ├── contact.fields  → label templates for all contact fields
+//  ├── legal           → footer legal requirements
+//  ├── seo.fields      → label templates for title / meta description
+//  ├── uiux            → auto-derived typography / color / pattern labels
+//  ├── industrySpecific → extended prompts for legacy industry types
+//  └── always[]        → hard rules appended to every prompt
+//
+//  (exports below PROMPT_DB)
+//  GLOBAL_PROMPT       → always prepended, regardless of user selections
+//  SECTION_PROMPTS     → full per-section prompt, only added when section is enabled
+//  deriveFontFromStyle → auto-derives font hint (logic, not prompts)
+//  deriveFontPair      → picks the best Google Fonts pair (logic + data)
+//  FONT_PAIRS          → Google Fonts data (used by deriveFontPair)
+//  FALLBACK_PALETTES   → hex color data (used when user skips color input)
+//  LANDING_PATTERNS    → page-structure hint per industry
+//  UX_CORE_RULES       → always-injected UX/accessibility rules
+//  HTML_BEST_PRACTICES → always-injected HTML rules
+//  ICON_GUIDELINES     → always-injected icon rules
+//  SECTION_DESIGN_PATTERNS → always-injected structural code reference examples
+//
+// HOW TO ADD A PROMPT
+//   1. Find the right key below (e.g. PROMPT_DB.basics.industry.tech)
+//   2. Replace the empty string "" with your instruction text
+//   3. For section prompts: edit SECTION_PROMPTS[key] at the bottom of this file
+//   4. For always-on rules: add to PROMPT_DB.always[]
+//   5. For global context: edit GLOBAL_PROMPT
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const PROMPT_DB = {
-  // ─── BASICS ──────────────────────────────────────────────────────────────────
+  // ─── SYSTEM ────────────────────────────────────────────────────────────────
+  // preamble: prepended before all blocks — role framing.
+  // footer:   appended after all blocks — final instruction.
+
+  system: {
+    preamble: `You are a senior frontend engineer and UI/UX designer specialising in production-ready static websites. Your output is always a single, valid JSON object — no markdown, no prose, no code fences.`,
+    footer: `Generate the complete website now. Return ONLY the JSON object described above. No markdown fences, no comments, no text outside the JSON.`,
+  },
+
+  // ─── BASICS ────────────────────────────────────────────────────────────────
 
   basics: {
+    fields: {
+      companyName: `- Company name: {{value}}`,
+      industry: `- Industry: {{value}}`,
+      slogan: `- Slogan (use verbatim in hero): "{{value}}"`,
+      description: `- Description: {{value}}`,
+    },
+
     industry: {
-      software:
-        "Software/SaaS company. Use a product-focused layout: feature-highlight grid, abstract mockup in hero, clean tech aesthetic. Emphasize reliability and capability.",
-      agency:
-        "Creative or digital agency. Hero should convey ambition and craft. Portfolio/case-studies and process are key sections. Show results, not just services.",
-      restaurant:
-        "Restaurant. Food is the hero — appetizing imagery throughout, menu section near the top, reservation CTA front and center in hero and sticky navbar.",
-      cafe: "Café or coffee shop. Warm, inviting atmosphere. Menu, opening hours, and daily specials are key. Photography should feel cozy and authentic.",
-      yoga: "Yoga or wellness studio. Calm, centered design. Class schedule and free trial class CTA are the primary conversion points.",
-      fitness:
-        "Fitness/gym/sports facility. Energetic visuals. Schedule, membership pricing, and a trial offer are front and center.",
-      handwerk:
-        "Trades/skilled labor business. Phone number must appear in the header AND prominently in the hero. Certifications and years of experience are key trust signals.",
-      personal:
-        "Personal brand or freelancer. Single-person voice throughout. Portfolio or services section, with contact as the primary CTA.",
-      ecommerce:
-        "E-Commerce shop. Product categories grid, bestseller highlights, and clear buy/shop CTAs throughout. Shipping info builds trust.",
-      personaldienst:
-        "HR/staffing/recruitment agency. Open positions list and benefits section are dominant. Application process should feel frictionless.",
-      other:
-        "General business. Clean, professional layout: services, trust signals, and contact CTA.",
+      tech: `Tech / SaaS product. Lead with a bold value proposition. Prioritise clarity of offering, feature highlights, social proof, and conversion.`,
+      agency: `Creative / digital agency. Showcase craft, portfolio, and team. Bold visual identity — the website IS the portfolio.`,
+      handwerk: `Skilled trades / Handwerk (construction, electrical, plumbing, etc.). Prioritise trust, local service area, quick contact, and credentials.`,
+      health: `Health, wellness, or medical practice. Trustworthy, calm tone. Lead with patient benefits, credentials, and booking.`,
+      gastro: `Restaurant, café, or bar. Lead with atmosphere and food photography. Prioritise menu, location, opening hours, reservations.`,
+      sport: `Fitness studio, sports club, or gym. Energetic, motivational tone. Lead with transformation, membership, and schedule.`,
+      brand: `Personal brand or influencer. Authentic, distinctive visual identity. Lead with personality and offer.`,
+      industry: `Industrial / B2B manufacturing or supply. Professional, reliable, precise tone. Prioritise capabilities, certifications, and contact.`,
+      realestate: `Real estate agency or property developer. Premium, trust-driven aesthetics. Lead with listings, services, and expertise.`,
+      education: `School, training provider, or e-learning platform. Accessible, trustworthy, inspiring tone. Lead with education and courses.`,
+      event: `Event, festival, or venue. High-energy, visual, date-driven. Lead with event highlights, tickets, and schedule. `,
+      nonprofit: `Non-profit or charity organisation. Mission-first, emotionally resonant. Lead with impact and call to action. `,
+      corporate: `Corporate or enterprise business. Executive, confident, trustworthy tone. Lead with key services and credentials.`,
+      portfolio: `Individual portfolio or personal website. Distinctive, memorable, personal. Lead with work and personality. `,
     },
   },
 
-  // ─── DESIGN ──────────────────────────────────────────────────────────────────
+  // ─── DESIGN ────────────────────────────────────────────────────────────────
 
   design: {
-    shape: {
-      round:
-        "Shape language: rounded. Use border-radius: 1rem on all cards and containers, border-radius: 9999px on buttons and avatar images, soft box-shadow. No sharp corners anywhere.",
-      angular:
-        "Shape language: sharp and angular. Use border-radius: 0 on cards and containers, at most 4px border-radius on small interactive elements. Hard or no shadows. Borders as lines, not softness.",
-      mixed:
-        "Shape language: mixed. Rounded corners on interactive components (buttons: border-radius: 9999px, cards: border-radius: 0.75rem), clean straight edges on structural layout sections and dividers.",
+    fields: {
+      colors: `- Color palette: {{value}}. Use the accent color for buttons and key interactive elements. Prefer white or bright backgrounds (except dark-mode builds).`,
     },
 
-    level: {
-      "super-modern":
-        "Sophistication level: cutting-edge. Push design boundaries — use gradient meshes, frosted glass cards (CSS backdrop-filter: blur), bold asymmetric grids, staggered entrance animations via CSS, kinetic micro-interactions. Every section should feel intentional and forward-looking.",
-      mid: "Sophistication level: contemporary. Clean responsive grid, smooth hover transitions, modern type hierarchy, purposeful color accents. Professional but not over-engineered.",
-      basic:
-        "Sophistication level: clean and functional. Standard symmetric grid, clear typography, minimal decoration. Readability and clarity over visual flair.",
+    shapeLanguage: {
+      rounded: `Use rounded shapes throughout — buttons, cards, inputs, avatars. Prefer rounded-xl (or similar) or rounded-full for interactive elements. Friendly, approachable aesthetic.`,
+      sharp: `No rounded corners anywhere. All elements use sharp, straight edges — rounded-none on every component (some rounded elements like buttons are okay if used consistently). Clean, angular, precise aesthetic.`,
     },
 
-    style: {
-      minimal:
-        "Design style: minimalist. Maximum whitespace, strict 1–2 color palette, sparse iconography. Typography carries all the visual weight. Every element must earn its place.",
-      brutalist:
-        "Design style: brutalist. Raw heavy typography, stark high-contrast colors, intentional asymmetry, visible structural grid. No soft shadows, no border-radius, no gradients. Bold and confrontational.",
-      modern:
-        "Design style: modern. Clean lines, balanced whitespace, contemporary type pairings, subtle color accents. Polished without being sterile.",
-      classic:
-        "Design style: classic/timeless. Symmetrical layouts, traditional type hierarchy (font-family: serif for headings), conservative color palette, dignified and trustworthy structure.",
-      playful:
-        "Design style: playful. Bright accent colors, bouncy hover animations, friendly rounded shapes, warm illustrations or icons. Fun but never chaotic.",
-      editorial:
-        "Design style: editorial. Magazine-inspired layout — large typographic moments, mixed column widths, strong photo integration. Reads like a premium publication.",
-      glassmorphism:
-        "Design style: glassmorphism. Frosted glass cards (CSS: backdrop-filter: blur(12px); background: rgba(255,255,255,0.1) or rgba(0,0,0,0.2)), glowing or neon accent colors, deep dark or rich gradient backgrounds.",
-    },
+    designDirection: {
+      minimal: `MINIMAL DESIGN SYSTEM — apply these rules to every section:
+• Layout: extreme whitespace as a design element. Generous section padding. Never crowd elements.
+• Typography: max 2 font weights. Strong size hierarchy through scale alone — no colour or decoration.
+• Colour: near-white background, one dark foreground, one optional accent strictly for CTAs. Never more.
+• Components: no decorative shadows or gradients. Buttons: outlined or text-only. Dividers: hairline 1px only (or avoid dividers/borders).
+• Imagery: single high-impact image or none. Decorative elements banned.
+• Animation (GSAP): fade-in on scroll. Nothing else.
+• Hero: a single powerful typographic statement. Optionally one image. No background gradients.`,
 
-    tone: {
-      professional:
-        'Communication tone: professional and authoritative. Formal, confident language. CTAs use decisive phrasing ("Jetzt anfragen", "Termin vereinbaren"). No colloquialisms.',
-      casual:
-        'Communication tone: relaxed and friendly. Conversational copy, approachable headlines, informal CTAs ("Komm vorbei", "Schreib uns gerne").',
-      playful:
-        "Communication tone: fun and energetic. Witty headlines, punchy short sentences, light humor where natural. CTAs are inviting, not commanding.",
-      formal:
-        'Communication tone: formal and respectful. Precise language, complete sentences, traditional hierarchy. Address the reader formally ("Sie"). Avoid contractions.',
-      youthful:
-        "Communication tone: youthful and dynamic. Bold punchy statements, trending visual language, energetic copy. Short lines, high impact.",
-      luxurious:
-        "Communication tone: luxurious and exclusive. Understated elegance, carefully chosen words. Less is more. Let quality speak quietly.",
-    },
+      modern: `MODERN DESIGN SYSTEM — apply these rules to every section:
+• Layout: asymmetric and dynamic. Mix full-bleed and contained sections. Break the grid intentionally at least once (e.g. an element overlapping section boundaries). Alternate light/dark section backgrounds.
+• Typography: oversized display heading. Bold weight contrast between heading and body. Two complementary fonts.
+• Colour: 3-colour palette — strong primary, neutral background, punchy accent for CTAs. Use colour blocks as section backgrounds.
+• Components: layered cards with subtle box-shadow. Bold pill or rectangular CTAs. Glassmorphism accent elements welcome.
+• Imagery: hero background gradient mesh or subtle noise texture. Floating decorated elements for depth.
+• Animation (GSAP): ScrollTrigger — elements slide in from below. Parallax on hero.
+• Hero: oversized bold headline + short subhead + prominent CTA. Background: gradient mesh, dark with light text, or large imagery.`,
 
-    // Font is NOT a user question — it is auto-derived by deriveFontFromStyle()
-    // See the deriveFontFromStyle() export below.
+      brutalist: `BRUTALIST DESIGN SYSTEM — apply these rules to every section:
+• Layout: intentionally raw and irregular. Exposed structural borders. Diagonal or overlapping elements. Asymmetric text blocks. Dense information without softening.
+• Typography: ultra-heavy or condensed display font, uppercase headings. Hierarchy purely through scale. Monospace or grotesque fonts.
+• Colour: near-black and white base + ONE aggressive accent (electric yellow, neon green, blood red). Flat fills, no gradients.
+• Components: no border-radius ever (rounded-none everywhere). Thick solid borders. No shadows. Buttons: flat solid with no radius.
+• Imagery: high-contrast, cropped tightly. Treat images as graphic elements. Or no images — pure typography.
+• Animation (GSAP): fast, abrupt — elements snap or crash into position. Short duration (0.2-0.3s), no easing or harsh ease-in.
+• Hero: enormous text, possibly bleeding off-screen. Raw, confrontational.`,
 
-    imagery: {
-      photos:
-        "Imagery: photographs. Use local image paths under /assets/ (e.g. /assets/hero.jpg, /assets/team.jpg). Never use external image URLs.",
-      illustrations:
-        "Imagery: illustrations. Use inline SVG illustrations or icon-heavy decorative sections. Avoid photographic placeholders.",
-      abstract:
-        "Imagery: abstract graphics. Use geometric CSS shapes, gradient blobs (CSS radial-gradient), or inline SVG paths rather than literal photos.",
-      minimal:
-        "Imagery: minimal. One or two key visuals maximum — everything else is whitespace and typography.",
-      none: "Imagery: none. Pure text, typography, color blocks. Do not use any img tags or image placeholder divs.",
+      luxury: `LUXURY DESIGN SYSTEM — apply these rules to every section:
+• Layout: spacious and editorial. Whitespace IS the luxury signal — never fill all space. Photography-dominant. Symmetrical compositions.
+• Typography: elegant light/thin serif for display headings. Refined sans-serif body. Max 2 fonts. Never bold for headings — use thin weight instead.
+• Colour: deep navy or near-black + warm cream/ivory + warm gold or bronze accent. Never bright or saturated. Muted, considered.
+• Components: thin 1-2px borders or filled backgrounds. Ghost/outline buttons. Fine hairline dividers between sections. No box shadows.
+• Imagery: full-viewport hero with atmospheric photography. No placeholder colours — use styled divs with aspect ratios and a descriptive caption.
+• Animation (GSAP): slow, effortless. Letter-spacing reveal on hero heading. Parallax on images. Never bouncy, never abrupt.
+• Hero: full-viewport image or deeply atmospheric colour with minimal text. Brand mark prominent. Less is more.`,
+
+      playful: `PLAYFUL DESIGN SYSTEM — apply these rules to every section:
+• Layout: loose and energetic. Blob or organic shapes as background accents. Tilted/rotated decorative elements. Overlapping sections with wave dividers.
+• Typography: bold rounded or expressive display font for headings. Friendly, slightly oversized. Emojis as section accents are allowed.
+• Colour: bright, saturated 3-4 colour palette. Gradient fills on hero and CTA sections. Unexpected combinations (coral + teal, lime + indigo).
+• Components: fully rounded — pill buttons (rounded-full), circular avatars, card border-radius 1.5rem. Bold colour fills. Coloured icon backgrounds.
+• Imagery: illustrations or flat artwork preferred. Photos with coloured overlays.
+• Animation (GSAP): subtle bounce on entry). Hover: scale with transition.
+• Hero: big bold headline with colour-highlighted keywords (e.g. a word in a different colour). Illustration or character. Energetic and inviting.`,
+
+      standard: `STANDARD DESIGN SYSTEM — apply these rules to every section:
+• Layout: clean structured grid, consistent spacing rhythm. Clear visual hierarchy.
+• Typography: reliable sans-serif. Clear size scale for H1/H2/body/caption. Accessible contrast.
+• Colour: one primary brand colour, neutral greys, clear CTA accent. Professional and trustworthy.
+• Components: consistent border-radius. Subtle shadows. Clear hover states on interactive elements.
+• Imagery: standard product/team photography. Hero background: light colour or subtle gradient.
+• Animation (GSAP): simple fade-in on scroll. Nothing distracting.
+• Hero: clear headline, supporting subhead, 1-2 CTA buttons.`,
     },
 
     darkMode: {
-      true: "Color scheme: dark mode. Background colors: #0f0f0f or #111827. Text: white or zinc-100. Accent colors should glow subtly. Card backgrounds: #1f2937 or similar. High contrast throughout.",
-      false:
-        "Color scheme: light mode. White or near-white backgrounds (white, gray-50). Dark text (gray-900, zinc-800). Clean contrast ratios meeting WCAG AA.",
-    },
-
-    animations: {
-      none: "Animations: none. Completely static — no CSS transitions, no transforms. Remove all animation-related code.",
-      subtle:
-        "Animations: subtle. Use CSS transitions (opacity, transform) on section entry via IntersectionObserver. Smooth hover color/scale transitions (transition: all 0.2s–0.3s ease). Keep it tasteful.",
-      moderate:
-        "Animations: moderate. CSS scroll-triggered fade-ins with staggered animation-delay (0.1s increments), hover lift effects (transform: translateY(-2px), box-shadow increase), smooth section transitions.",
-      heavy:
-        "Animations: rich and expressive. CSS keyframe animations for entrance choreography, kinetic hover states with smooth cubic-bezier transitions. Use JavaScript IntersectionObserver for scroll-triggered reveals.",
-    },
-
-    heroStyle: {
-      "fullscreen-image":
-        "Hero layout: fullscreen image. Full viewport height (min-height: 100vh), background image fills frame with object-fit: cover, dark overlay gradient (linear-gradient from rgba(0,0,0,0.7) to rgba(0,0,0,0.3)) for text readability. Headline and CTA centered or left-aligned over image.",
-      split:
-        "Hero layout: split layout. Left half: headline, subline, CTA button(s). Right half: image or visual element. Use CSS grid or flexbox 50/50. On mobile, stack vertically (image below text).",
-      "video-bg":
-        'Hero layout: video background. Use a styled div placeholder (background: linear-gradient(135deg, #111827, #374151); min-height: 100vh) to simulate a video background. Text overlay with white text, high contrast. Add a subtle "▶ Showreel" button as decoration.',
-      "text-only":
-        "Hero layout: text-only. Large typographic statement dominates the viewport. Optional geometric color-block accent or CSS gradient shape in the background. No photography needed.",
-    },
-
-    layout: {
-      airy: "Layout feel: airy and spacious. Section vertical padding: 6rem–8rem. Large line heights (line-height: 1.7–1.9). Generous gaps between elements. Let content breathe.",
-      balanced:
-        "Layout feel: balanced. Section vertical padding: 4rem–5rem. Consistent rhythm, comfortable reading density. Standard gap of 2rem–3rem between elements.",
-      dense:
-        "Layout feel: information-dense. Section vertical padding: 2rem–3rem. Multiple columns where possible. Compact 1rem–1.5rem gaps. Pack value — show more per screen.",
+      true: `Dark mode: use dark backgrounds (slate-900, zinc-900, or near-black) with white/light text throughout. Tailwind CDN — apply dark variants where needed. Adjust card backgrounds to slate-800 or similar.`,
+      false: `Light mode: white or very light backgrounds are primary. Avoid black as a global background. You MAY use dark-background sections sparingly for visual contrast (e.g. a dark CTA strip or footer).`,
     },
   },
 
-  // ─── SECTIONS ─────────────────────────────────────────────────────────────────
-  // Snippets for optional sections — included when brief.sections[key] === true
+  // ─── SECTIONS ──────────────────────────────────────────────────────────────
 
   sections: {
-    team: "SECTION — Team: Photo placeholder (gray rounded div or circle), name, role title, 1–2 sentence bio per member. Grid layout.",
-    testimonials:
-      "SECTION — Testimonials/Reviews: Quote cards with star rating (★ filled/empty), testimonial text in italics, author name and optional company. Consider a horizontal scroll or 3-column grid.",
-    about:
-      "SECTION — About Us: Company story, values, and a visual element (image or illustrated graphic placeholder). Split layout or centered text with image.",
-    faq: "SECTION — FAQ: Accordion or clearly separated Q&A pairs. Each question bold, answer in normal weight below.",
-    process:
-      'SECTION — Process ("So läuft\'s ab"): Numbered steps (1, 2, 3, 4) with an inline SVG icon per step and a short description. Horizontal on desktop, vertical on mobile.',
-    gallery:
-      "SECTION — Gallery/Portfolio: Image grid with uniform aspect ratio using local /assets/ image paths. Hover overlay with a subtle darkening effect.",
-    blog: "SECTION — Blog/News Preview: 3 article preview cards — cover image placeholder, category tag, title, short excerpt (1–2 lines), and publication date.",
-    pricing:
-      "SECTION — Pricing: 2–3 pricing plan cards. Each card: plan name, price (prominent), feature checklist (✓), CTA button. Highlight one plan as recommended.",
-    compareTable:
-      "SECTION — Comparison Table: Feature comparison table with plans as columns and features as rows. Use ✓/✗ or filled/empty icons. Clear header row.",
-    stats:
-      'SECTION — Stats Banner: Full-width colored strip with 3–4 large bold numbers and descriptive labels (e.g., "10.000+ Kunden", "5 Jahre Erfahrung", "98% Zufriedenheit"). Centered, high contrast.',
-    careers:
-      "SECTION — Careers/Jobs: List of open positions with job title, location, and employment type. Each entry links to /contact. Info only — no application form in this section.",
-    locations:
-      "SECTION — Locations/Filialen: Multiple location cards with address, opening hours, and a map placeholder div (gray box with a map pin icon). Grid layout.",
-    partnerLogos:
-      'SECTION — Partner/Customer Logos: Horizontal strip of grayscale logo placeholders (styled divs with company name in light gray text, or simple gray rectangles). "Unsere Partner" heading.',
+    meta: {
+      alwaysOn: `- Always include: Navbar, Hero, Contact Page (/contact.html), Footer`,
+      footerRule: `- Footer must always appear last on the landing page.`,
+      enabledHeader: `- Additional sections to build:`,
+      disabledHeader: `- Explicitly DO NOT include:`,
+    },
+
+    // fallback snippets (used only if SECTION_PROMPTS[key] returns "")
+    about: `About/Story section — compelling company narrative with brand values`,
+    team: `Team section — member cards with photo placeholder, name, role, short bio`,
+    testimonials: `Testimonials section — review cards with quote, star rating, author name and role`,
+    process: `Process section — numbered step-by-step workflow or timeline`,
+    portfolio: `Portfolio section — project grid with title, description, image placeholder`,
+    pricing: `Pricing section — tier cards with feature lists and CTA buttons`,
+    comparison: `Comparison section — feature/competitor table`,
+    stats: `Stats/Trust section — key numbers with animated count-up`,
+    faq: `FAQ section — accordion with 5–8 questions and answers`,
+    careers: `Careers section — open position listings with apply CTA`,
+    locations: `Locations section — address cards with map integration`,
+    partners: `Partners section — logo row / integration grid`,
   },
 
-  // ─── CTA ─────────────────────────────────────────────────────────────────────
+  // ─── CTA ───────────────────────────────────────────────────────────────────
 
   cta: {
-    call: 'Primary CTA: "Jetzt anrufen" — render as a tel: link styled as the main button. Must appear in hero and navbar.',
-    book: 'Primary CTA: "Termin buchen" — link to /contact. Prominent hero and navbar button.',
-    contact:
-      'Primary CTA: "Kontakt aufnehmen" — link to /contact. Default CTA for hero and all CTA positions.',
-    buy: 'Primary CTA: "Jetzt kaufen" — prominent buy/shop styled button. Link to /contact or scroll to services section.',
-    demo: 'Primary CTA: "Demo anfragen" — link to /contact. Hero and navbar.',
+    call: `Primary CTA is a phone call. Place a prominent "Call Now" button in the navbar, hero, and before the footer. Link to tel:{{phone}}. Use a phone icon (Lucide: phone).`,
+    book: `Primary CTA is booking an appointment. Place a prominent "Book Now" button in the navbar, hero, and before the footer. Link to the contact page (/contact.html#booking) or an inline booking form. Use a calendar icon (Lucide: calendar).`,
+    contact: `Primary CTA is a contact form. Place a "Get in Touch" button in the navbar, hero, and before the footer — all linking to /contact.html. The contact page must include a full contact form (name, email, message, submit button).`,
+    buy: `Primary CTA is a purchase action. Place a prominent "Buy Now" or "Shop" button in the navbar, hero, and before the footer. Link to the relevant product or checkout page.`,
+    demo: `Primary CTA is requesting a demo. Place a "Book a Demo" or "Get a Free Demo" button in the navbar, hero, and before the footer. Link to /contact.html#demo. Use a play or monitor icon (Lucide: play-circle or monitor).`,
   },
 
-  // ─── INDUSTRY-SPECIFIC ───────────────────────────────────────────────────────
-  // Base snippet always added for the matching industry.
-  // Conditional sub-snippets added when the relevant data is present in the brief.
+  // ─── CONTACT FIELDS ────────────────────────────────────────────────────────
+
+  contact: {
+    fields: {
+      phone: `- Phone: {{value}} — display in footer and contact page; link as tel:{{value}}`,
+      email: `- Email: {{value}} — display in footer and contact page; link as mailto:{{value}}`,
+      address: `- Address: {{value}} — display in footer and contact page`,
+      openingHours: `- Opening hours: {{value}} — display in footer and contact page`,
+      furtherLinks: `- Additional link: {{value}} — include in footer nav or contact page`,
+      specials: `- Specials / promotions: {{value}} — feature prominently in hero or a dedicated banner`,
+      social: `- Social media links: {{value}} — add icon links in navbar (desktop) and footer using Lucide icons`,
+    },
+  },
+
+  // ─── LEGAL ─────────────────────────────────────────────────────────────────
+
+  legal: {
+    footerRequired: `The footer must include text links to /imprint.html ("Imprint") and /privacy.html ("Privacy") — these are required for law compliance. Add both pages to the "pages" JSON output with minimal placeholder content.`,
+    imprintConfirmed: `Imprint page confirmed — generate /imprint.html with full content based on provided company details.`,
+    privacyConfirmed: `Privacy page confirmed — generate /privacy.html with full GDPR-compliant privacy policy.`,
+  },
+
+  // ─── SEO ───────────────────────────────────────────────────────────────────
+
+  seo: {
+    fields: {
+      title: `- Page <title> tag: {{value}}`,
+      description: `- Meta description (max 155 chars): {{value}}`,
+    },
+  },
+
+  // ─── UI/UX AUTO-DERIVED LABELS ─────────────────────────────────────────────
+  // {{placeholders}} are replaced with computed values — keep them exactly.
+  //
+  // typography.header  → section heading line
+  // typography.fonts   → {{heading}}, {{body}}
+  // typography.link    → {{load}}
+  // typography.apply   → {{heading}}, {{headingStack}}, {{body}}, {{bodyStack}}
+  // colors             → {{industry}}, {{primary}}, {{secondary}}, {{accent}}, {{bg}}, {{fg}}, {{note}}
+  // pattern            → {{pattern}}
+
+  uiux: {
+    typography: {
+      header: `Typography system (apply to ALL pages consistently):`,
+      fonts: `- Heading font: "{{heading}}" | Body font: "{{body}}" — load both from Google Fonts`,
+      link: `- Google Fonts <link> to add in <head>: https://fonts.googleapis.com/css2?family=NAME&display=swap`,
+      apply: `- Apply: font-family: '{{heading}}', {{headingStack}} for all headings (h1–h4); font-family: '{{body}}', {{bodyStack}} for body text, paragraphs, and UI labels`,
+    },
+    colors: `User provided colours:
+- Background: {{primary}} | Text: {{secondary}} | Accent: {{accent}}
+- Note: {{note}}
+ Use accent strictly for CTA buttons and key highlights. Background as page base.`,
+    pattern: `Page structure pattern: {{pattern}}`,
+  },
+
+  // ─── INDUSTRY-SPECIFIC ──────────────────────────────────
 
   industrySpecific: {
     restaurant: {
-      base: "RESTAURANT: Menu section is placed near the top of the page (second or third section). Appetizing image placeholders. Reservation CTA is the most visible button in the hero.",
-      reservation:
-        'Reservation link: create a prominent "Tisch reservieren" button that opens the reservation URL in a new tab.',
-      delivery:
-        'Delivery links: show delivery platform buttons (styled as "Bestellen bei Wolt/Lieferando") near or below the menu section.',
-      dietary:
-        "Dietary filters: add small badge labels (🌱 Vegan, 🥬 Vegetarisch) on relevant menu items.",
+      base: `Restaurant: prioritise food photography placeholders, menu section, reservation/contact form, opening hours prominently displayed, and map on contact page.`,
+      reservation: `Include an inline reservation form or a "Reserve a Table" CTA.`,
+      delivery: `Include a delivery/ordering CTA with link.`,
+      dietary: `Display dietary information (vegan, gluten-free, etc.) on menu items.`,
     },
     cafe: {
-      base: "CAFÉ: Warm, inviting feel. Coffee imagery and handwritten-style accents where fitting. Menu and opening hours are primary content blocks.",
+      base: `Café: warm, welcoming aesthetic. Feature menu highlights, opening hours, and map. Emphasise the atmosphere with rich imagery placeholders.`,
     },
     agency: {
-      base: "AGENCY: Portfolio/work section is a key section. Hero communicates ambition and results. Use numbers to show impact.",
-      caseStudies:
-        "Case studies: display as visual project cards — project name, client, and key result metric. Grid of 2–3 cards.",
-      techStack:
-        "Tech stack: render as a clean horizontal icon strip or a tag cloud of technology names.",
-      projects:
-        "Reference projects: portfolio card grid with project name and short description.",
+      base: `Agency: the website must itself be a demonstration of design quality. Unique layout, portfolio grid, clear services.`,
+      caseStudies: `Include case study cards with project name, client, results, and image placeholder.`,
+      techStack: `Display technology/tool icons or logos used.`,
+      projects: `Portfolio section with project title, description, image placeholder, and optional link.`,
     },
     software: {
-      base: "SOFTWARE: Feature highlights in a 3-column icon grid below the hero. Hero includes an abstract product mockup (styled div or SVG). Emphasize reliability and scalability.",
+      base: `Software/SaaS: clear value proposition, feature list with icons, pricing table, and social proof. Include a demo or trial CTA (if provided by user, default: /contact).`,
     },
     personaldienst: {
-      base: "RECRUITMENT: Open positions section is dominant (styled as job listing cards). Benefits section uses icon+text cards. The overall feel is trustworthy and approachable for candidates.",
-      positions:
-        'Open positions: list as styled job cards — title, location/type, and a "Jetzt bewerben" link to /contact per card.',
-      appForm:
-        'Application form: include a visible "Jetzt bewerben" CTA linking to /contact or the application URL.',
-      benefits:
-        "Benefits: display as a grid of cards with inline SVG icons and labels. Make this section visually distinct and appealing.",
+      base: `Staffing/HR: professional and approachable. Feature open positions, application process, and company benefits.`,
+      positions: `Job listings with title, type (full/part time), location, short description.`,
+      appForm: `Application form with name, email, position, CV upload (input type=file), submit.`,
+      benefits: `Benefits section with icon + text pairs (Lucide icons).`,
     },
     handwerk: {
-      base: "TRADES: Phone number rendered in header (top right, large) AND in the hero (below the headline, as a tel: link button). Certifications and years of experience in a trust-signal strip.",
-      serviceArea:
-        'Service area: include a short "Einsatzgebiet" callout in the hero or about section, listing the regions/postal codes served.',
-      emergency:
-        'Emergency service: add a prominent "24/7 Notdienst" badge or banner — top of hero or a sticky colored strip. Use a warning/alert color (red or amber).',
-      beforeAfter:
-        'Before/After gallery: side-by-side image placeholder cards with "Vorher" / "Nachher" labels. At least 3 pairs in a grid.',
+      base: `Skilled trades: trust and reliability are paramount. Display service area, certifications, emergency contact, before/after gallery.`,
+      serviceArea: `Display service radius or list of covered cities/districts.`,
+      emergency: `Prominent emergency hotline button if applicable.`,
+      beforeAfter: `Before/after image comparison cards.`,
     },
     yoga: {
-      base: "YOGA/WELLNESS: Calm, spacious layout. Muted or earth-tone palette unless overridden. Free trial class CTA is the hero's secondary button.",
-      schedule:
-        "Class schedule: display as a weekly timetable (table or card grid, organized by day). Show day, time, and class name.",
-      trainers:
-        "Trainers: profile card grid — circular photo placeholder, name, specialty. Clean and personal.",
-      trialClass:
-        'Free trial class: prominent "Probestunde buchen" CTA button — link to /contact. Place in hero and in a dedicated CTA section.',
+      base: `Yoga studio: calm, centred aesthetic. Feature class schedule, instructors, and trial class CTA.`,
+      schedule: `Weekly class schedule table or card grid.`,
+      trainers: `Instructor profiles with photo placeholder, name, speciality, bio.`,
+      trialClass: `Prominent "Book a Free Trial Class" CTA.`,
     },
     fitness: {
-      base: "FITNESS: High-energy visuals, bold typography. Schedule and membership pricing prominent. Trial offer as a hero CTA.",
-      schedule:
-        "Class schedule: display as a weekly timetable (table or card grid, organized by day). Show day, time, class name.",
-      trainers:
-        "Trainers: profile card grid — circular photo placeholder, name, specialty.",
-      trialClass:
-        'Free trial: prominent "Gratis testen" CTA — link to /contact.',
-    },
-    ecommerce: {
-      base: "E-COMMERCE: Category grid above the fold. Bestseller row with product cards. Shipping info as trust badges.",
-      categories:
-        'Product categories: display as a visual grid of category tiles — each with an image placeholder, category name, and "Jetzt entdecken" link.',
-      bestsellers:
-        'Bestsellers: horizontal scroll or featured card row — product image placeholder, name, price (if available), and "Kaufen" button.',
-      shipping:
-        'Shipping info: display as 3–4 short trust icons/badges ("Kostenloser Versand ab X€", "Schnelle Lieferung", "Einfache Rückgabe") in a horizontal strip.',
+      base: `Fitness/gym: energetic and motivational. Feature classes/services, membership pricing, trainers, and schedule.`,
+      schedule: `Class schedule with day, time, class name, instructor.`,
+      trainers: `Trainer profiles with photo placeholder, name, speciality.`,
+      trialClass: `"Try a Free Session" or "Free 7-Day Pass" CTA. ONLY IF INFO PROVIDED BY USER!!`,
     },
   },
 
-  // ─── ALWAYS-ON RULES ─────────────────────────────────────────────────────────
-  // These are added to every prompt regardless of brief content.
+  // ─── ALWAYS-ON RULES ───────────────────────────────────────────────────────
 
   always: [
-    'OUTPUT FORMAT: Return only one JSON object with top-level keys "pages", "assets", and "slots". No markdown fences (e.g. ```json), no prose.',
-    'PAGES CONTRACT: "pages" maps real file names (e.g. index.html, contact.html, team.html) to complete HTML5 documents.',
-    'HTML CONTRACT: Each page must start with <!doctype html> and end with </html>. Use plain HTML, CSS in <style> blocks, and vanilla JS only.',
-    'MULTI-PAGE NAVIGATION: Use only real file links like /index.html, /contact.html, /team.html.',
-    'NAVIGATION FORBIDDEN: Never use hash navigation (#...), router.push(), window.location.hash, or SPA routing.',
-    'SLOTS CONTRACT: EVERY piece of editable text MUST have a data-slot attribute. Example: <h1 data-slot="hero.title">Willkommen</h1>. Slot keys must follow section.element format (e.g. hero.title, hero.subtitle, team.member1.name, contact.email, footer.text, meta.title). No random IDs.',
-    'ASSETS CONTRACT: All images must use local /assets/... paths and be listed in the "assets" object. Example: <img src="/assets/hero.jpg" data-slot="hero.image">',
-    'IMAGE FORBIDDEN: Never use external image URLs (no picsum, no unsplash, no placeholder.com).',
-    'TECH CONSTRAINT: Build plain static HTML/CSS/JS pages only. Never use React, Vue, Angular, Tailwind, Bootstrap, framer-motion, lucide-react, or any JS/CSS framework. The only allowed external CDN resources are: Google Fonts (fonts.googleapis.com) and Leaflet.js (unpkg.com/leaflet) for interactive maps.',
-    'NO EXPLANATIONS: Return JSON only.',
+    `Every page must start with <!doctype html> and end with </html>.`,
+    `Load CDN scripts in <head> (or just before </body> for GSAP/Lucide): Tailwind v4 browser CDN, GSAP CDN, Lucide CDN. Never use npm imports.`,
+    `Initialise Lucide icons with lucide.createIcons() at the end of every page's <body>.`,
+    `All images MUST be styled placeholder <div> elements with a defined aspect ratio, background colour, and a descriptive data-slot attribute. Never use broken <img> tags without a src, and never use external image URLs (no picsum, unsplash, etc.). Real image paths use /assets/... format.`,
+    `Every text node must carry data-slot="section.element". Every image placeholder must also have data-slot.`,
+    `Navigation uses real file links (/index.html, /contact.html). Never hash-only links (#), never SPA routing.`,
+    `All pages must be fully responsive — mobile hamburger menu, scaled typography, stacked grids. Test every layout at 375px and 1280px widths.`,
   ],
 };
 
-// ─── FONT DERIVATION ─────────────────────────────────────────────────────────
-// Auto-derives a font recommendation from the design style and tone.
-// This is NOT a user question — it gets computed and injected into the prompt.
+// ─── GLOBAL PROMPT ─────────────────────────────────────────────────────────────
+// Added to every generation before the per-block content.
+
+export const GLOBAL_PROMPT = `You are generating a JSON representation of a multi-page static website package.
+Return ONLY JSON in THIS EXACT FORMAT — no markdown fences, no prose, no explanations:
+{
+  "pages": {
+    "index.html": "<!doctype html>...full HTML document...</html>",
+    "contact.html": "<!doctype html>...full HTML document...</html>"
+  },
+  "assets": {
+    "hero.jpg": "placeholder"
+  },
+  "slots": {
+    "hero.title": "Willkommen",
+    "hero.subtitle": "Wir bauen Software",
+    "contact.address": "Musterstraße 1"
+  }
+}
+
+OUTPUT CONTRACT:
+- pages  = complete HTML5 documents (<!doctype html> … </html>), one per page
+- assets = expected image paths, always with value "placeholder"
+- slots  = every editable text node, keyed as section.element (e.g. hero.title)
+
+ABSOLUTE RULES — violation is not acceptable:
+1. Every page starts with <!doctype html> and ends with </html>.
+2. Use ONLY HTML + CSS + the following CDN libraries. NO npm, NO React/Vue/Angular, NO Bootstrap, NO framer-motion:
+   Tailwind CSS v4:  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+   GSAP 3.10:        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+   Lucide icons:     <script src="https://unpkg.com/lucide@latest"></script>
+   Leaflet/maps:     <script type="module" src="https://cdn.jsdelivr.net/npm/leaflet-html@0.13.11/+esm"></script>
+2.1 For the Website Design: never ever copy something. ALWAYS MAKE THE WEBSITE UNIQUE for the specific business. Cards, layouts, elemts must be unique, but still well structured and aesthetically pleasing.
+3. Navigation uses only real file links (/index.html, /contact.html, /imprint, /privacy,...). Never hash-only links, never SPA routing.
+4. Every text node must carry data-slot="section.element". Every image placeholder must have data-slot too.
+5. All images are styled placeholder <div> elements with aspect ratio and a descriptive label. Never broken <img> tags. Asset paths use /assets/...
+6. Call lucide.createIcons() at the end of every page body to render Lucide icons.
+7. Use as much user content as possible.
+8. Always use the language of the user inputs for the whole website. 
+9. Return plain JSON only — no markdown fences, no explanations, no text outside the JSON object.`;
+
+// ─── SECTION PROMPTS ───────────────────────────────────────────────────────────
+// One function per optional section.
+// Called ONLY when the user has enabled that section (enabled === true).
+// data = the section's object from the brief, e.g. { enabled: true, story: "..." }
+//
+// If a function returns "" the builder falls back to PROMPT_DB.sections[key].
+
+export const SECTION_PROMPTS = {
+  // ── ABOUT / STORY ────────────────────────────────────────────────────────────
+  about: (data) => {
+    const story = data.story?.trim();
+    return `ABOUT / STORY SECTION:
+- Layout: split layout (text left, image placeholder right) or full-width editorial block depending on design style. UNIQUE ALWAYS, these are just inspirational examples.
+- Content: ${
+      story
+        ? `use this exact story verbatim: "${story}"`
+        : `AI generates a compelling 2–3 paragraph brand story based on the brief — focus on origin, mission, and what makes them unique.`
+    }
+- Include: company values or key differentiators as 3 icon+text bullet points (Lucide icons).
+- Tone: match the overall design direction — warm for playful/health, authoritative for luxury/corporate, raw for brutalist.
+- Minimal/luxury: heavy whitespace, large quote or pull-quote element.
+- Modern/standard: side-by-side text and image placeholder.
+- Brutalist: bold statement text, exposed raw layout.`;
+  },
+
+  // ── TEAM ─────────────────────────────────────────────────────────────────────
+  team: (data) => {
+    const members = data.members?.trim();
+    return `TEAM SECTION:
+- Layout: responsive grid (3-4 columns desktop, 2 tablet, 1 mobile). Each card: circular or rounded image placeholder, name, role/title, 1-line bio. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      members
+        ? `Use these exact team members verbatim (one per line): "${members}"`
+        : `AI generates 3–4 realistic team members appropriate for the industry and company size.`
+    }
+- Card style: match design direction — ghost border cards for luxury/minimal, coloured header cards for playful, stark high-contrast for brutalist.
+- Optional: LinkedIn icon link per card (Lucide: linkedin).
+- Animate: stagger cards on scroll (GSAP, opacity + translateY,...).`;
+  },
+
+  // ── TESTIMONIALS / REVIEWS ───────────────────────────────────────────────────
+  testimonials: (data) => {
+    const reviews = data.reviews?.trim();
+    return `TESTIMONIALS / REVIEWS SECTION:
+- Layout: responsive grid (2-3 columns desktop, 1 mobile) of review cards. Each card: 5-star rating (5 Lucide "star" icons, fill-amber-400), quote text (italic), author name + company/role. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+Code example:
+━━━ TESTIMONIAL CARD REFERENCE PATTERN ━━━
+<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col gap-4">
+  <!-- Star rating using Lucide icons -->
+  <div class="flex gap-1" aria-label="5 out of 5 stars">
+    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+  </div>
+  <!-- Quote -->
+  <blockquote class="text-slate-600 text-sm leading-relaxed italic" data-slot="testimonials.quote1">
+    "The best decision we made — results exceeded expectations."
+  </blockquote>
+  <!-- Author -->
+  <div class="flex items-center gap-3 mt-auto">
+    <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-500" data-slot="testimonials.avatar1">JD</div>
+    <div>
+      <p class="font-semibold text-slate-900 text-sm" data-slot="testimonials.name1">Jane Doe</p>
+      <p class="text-slate-400 text-xs" data-slot="testimonials.role1">CEO, Acme GmbH</p>
+    </div>
+  </div>
+</div>
+Never use the code (ANY CODE IN THIS PROMPT) exactly like it is provided here. Always adapt and make it unique for this specific business.
+- ${
+      reviews
+        ? `Use these exact reviews verbatim: "${reviews}"`
+        : `AI generates 3–4 realistic, industry-appropriate reviews with full names, roles, and companies.`
+    }
+- Card style: white cards with shadow for standard/modern; thin-border ghost cards for luxury/minimal; raw bordered blocks for brutalist; rounded colourful cards for playful.
+- Consider a large opening quote mark (") as a decorative typographic element.
+- Optional: overall rating badge (e.g. "4.8 / 5 based on 120 reviews") as a section header element.
+- Animate: fade in on scroll with stagger.`;
+  },
+
+  // ── PROCESS / HOW IT WORKS ───────────────────────────────────────────────────
+  process: (data) => {
+    const description = data.description?.trim();
+    return `PROCESS / HOW IT WORKS SECTION:
+- Layout: horizontal numbered steps on desktop (connected with a line or arrow), stacked on mobile. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      description
+        ? `Use these exact process steps verbatim: "${description}"`
+        : `AI creates 3–5 clear, action-oriented steps appropriate for the industry.`
+    }
+- Each step: large number or icon (Lucide), step title (bold), 1–2 sentence description.
+- Connector: a thin line or arrow (CSS border or Lucide "arrow-right") between steps on desktop.
+- Style: adapt to design direction — ultra-clean numbering for minimal/luxury; bold oversized numbers for brutalist/modern; icon-forward colourful steps for playful.`;
+  },
+
+  // ── PORTFOLIO / PROJECTS ─────────────────────────────────────────────────────
+  portfolio: (data) => {
+    const projects = data.projects?.trim();
+    return `PORTFOLIO / PROJECTS SECTION:
+- Layout: masonry or 2-3 column grid on desktop, single column on mobile. Each item: image placeholder (16:9 or 4:3 ratio), project title, category tag, short description. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      projects
+        ? `Use these exact projects verbatim: "${projects}"`
+        : `AI generates 4–6 representative project placeholders appropriate for the industry.`
+    }
+- Hover effect: overlay with project title and a "View Project" link (Lucide: external-link icon) (only if link provided).
+- Filtering: optional category filter buttons above the grid if multiple categories exist.
+- Animate: grid items fade in with stagger on scroll.`;
+  },
+
+  // ── PRICING ──────────────────────────────────────────────────────────────────
+  pricing: (data) => {
+    const details = data.details?.trim();
+    return `PRICING / SERVICES SECTION:
+- Layout: 2–4 pricing tier cards in a row (desktop), stacked (mobile). Most popular tier visually elevated (larger, coloured background, or "Popular" badge). UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      details
+        ? `Use these exact prices and inclusions verbatim: "${details}"`
+        : `AI creates appropriate pricing tiers for the industry with realistic price points and feature lists.`
+    }
+- Each card: tier name, price (with period — /month, /project, etc.), feature list with checkmark icons (Lucide: check), CTA button.
+- Style: adapt to design direction — ghost border cards for luxury; coloured highlight card for modern/playful; raw bordered tiers for brutalist.
+- Include a "Questions? Contact us" link below the cards.`;
+  },
+
+  // ── COMPARISON ───────────────────────────────────────────────────────────────
+  comparison: (data) => {
+    const compData = data.data?.trim();
+    return `COMPARISON / FEATURE TABLE SECTION:
+- Layout: responsive table (columns = options, rows = features). On mobile: horizontally scrollable or card-based comparison. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      compData
+        ? `Use this exact comparison data verbatim: "${compData}"`
+        : `AI builds a feature comparison table highlighting the company's key advantages over generic alternatives.`
+    }
+- Use Lucide icons: "check" (green) for supported features, "x" (red/grey) for unsupported.
+- Visually highlight the company's column as the preferred option (coloured header, border accent).`;
+  },
+
+  // ── STATS / TRUST ─────────────────────────────────────────────────────────────
+  stats: (data) => {
+    const statsData = data.data?.trim();
+    return `STATS / TRUST SECTION:
+- Layout: horizontal row of 3–5 stat blocks (desktop), 2-column grid (mobile). Each block: large number/stat, label below. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      statsData
+        ? `Use these exact numbers and labels verbatim: "${statsData}"`
+        : `AI creates impactful, industry-appropriate trust statistics (e.g. years in business, clients served, projects completed, satisfaction rate).`
+    }
+- Animate: GSAP counter animation — numbers count up from 0 to final value on scroll entry.
+- Style: bold oversized numbers (4–6rem) in primary or accent colour. Clean label below in body font.
+- Optional: thin border separators between stats.`;
+  },
+
+  // ── FAQ ───────────────────────────────────────────────────────────────────────
+  // eslint-disable-next-line no-unused-vars
+  faq: () => {
+    return `FAQ SECTION:
+- Layout: accordion list. Each item: question as a clickable row (bold text + Lucide "chevron-down" icon), answer expands below on click.
+- Content: AI generates 6–8 genuinely useful questions and answers based on the industry and company brief. NEVER MADE UP CONTENT!
+- Interaction: toggle open/close on click via JavaScript. Only one item open at a time.
+- Style: clean dividers between questions. Match design direction — wide generous rows for luxury/minimal; tight dense rows for brutalist/standard.`;
+  },
+
+  // ── CAREERS ──────────────────────────────────────────────────────────────────
+  careers: (data) => {
+    const jobs = data.jobs?.trim();
+    return `CAREERS / JOBS SECTION:
+- Layout: list of job cards. Each card: job title, employment type (Full-time/Part-time/Remote), location, short description, "Apply Now" CTA button. FOCUS ON USER PROVIDED CONTENT!
+- ${
+      jobs
+        ? `Use these exact job listings verbatim: "${jobs}"`
+        : `AI creates 3–4 example open positions appropriate for the industry.`
+    }
+- CTA links to /contact.html#careers or includes an inline application form (name, email, position, message, submit).
+- Optional: intro paragraph on company culture above the job listings.`;
+  },
+
+  // ── LOCATIONS ────────────────────────────────────────────────────────────────
+  locations: (data) => {
+    const addresses = data.addresses?.trim();
+    return `LOCATIONS / BRANCHES SECTION:
+- Layout: grid of location cards (2–3 columns desktop, 1 mobile) + optional custom Leaflet map below. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      addresses
+        ? `Use these exact addresses verbatim: "${addresses}"`
+        : `AI creates a placeholder location display.`
+    }
+- Each card: location name, full address, (phone number), opening hours.
+- If a map is included: use Leaflet/OpenStreetMap with the leaflet-html CDN module. Place a marker at each location. Do NOT place info-text as an overlay directly on the map — use the cards instead.`;
+  },
+
+  // ── PARTNERS / LOGOS ─────────────────────────────────────────────────────────
+  partners: (data) => {
+    const names = data.names?.trim();
+    return `PARTNERS / INTEGRATIONS / LOGOS SECTION:
+- Layout: horizontal scrolling row or responsive grid of logo placeholders. Each placeholder: styled div with brand name as text (since we cannot load external logos) or image placeholders. UNIQUE and adjust ALWAYS, these are just inspirational examples.
+- ${
+      names
+        ? `Use these exact partner/integration names verbatim: "${names}"`
+        : `AI creates representative partner names appropriate for the industry.`
+    }
+- Style: greyscale or low-opacity logos that gain full colour on hover (use CSS filter + transition).
+- Optional intro text: "Trusted by / Works with / Integrates with" heading above the logo row.`;
+  },
+};
+
+// ─── FONT DERIVATION ───────────────────────────────────────────────────────────
 
 export function deriveFontFromStyle(style, tone) {
-  // Style takes priority
   const byStyle = {
-    brutalist: {
-      hint: "monospace or heavy display typeface — use font-mono or a bold system font stack",
-    },
-    minimal: {
-      hint: "clean geometric sans-serif, 1–2 weights only (e.g., Inter, system-ui)",
-    },
-    editorial: {
-      hint: "pairing of a serif for headings and clean sans-serif for body text",
-    },
+    brutalist: { hint: `monospace or heavy display typeface` },
+    minimal: { hint: `clean geometric sans-serif, 1–2 weights only` },
+    editorial: { hint: `serif heading + clean sans-serif body` },
     classic: {
-      hint: "classic serif typeface for headings (font-serif class), readable serif or sans for body",
+      hint: `classic serif for headings, readable serif or sans for body`,
     },
-    playful: { hint: "friendly rounded or display typeface — bold and warm" },
-    glassmorphism: {
-      hint: "modern geometric sans-serif, medium/bold weights for legibility on dark backgrounds",
+    playful: { hint: `friendly rounded or display typeface — bold and warm` },
+    glassmorphism: { hint: `modern sans-serif, medium/bold weights` },
+    modern: { hint: `clean modern sans-serif with clear weight contrast` },
+    luxury: {
+      hint: `elegant thin serif for titles, refined sans-serif for texts`,
     },
-    modern: {
-      hint: "clean modern sans-serif with clear weight contrast between headings and body",
-    },
+    standard: { hint: `clean, legible sans-serif — neutral and universal` },
   };
   if (byStyle[style]) return byStyle[style].hint;
-
-  // Tone fallback
   if (tone === "luxurious" || tone === "formal")
-    return "elegant serif for headings, refined sans-serif for body";
+    return `elegant serif for headings, refined sans-serif for body`;
   if (tone === "youthful" || tone === "playful")
-    return "bold display or rounded sans-serif typeface";
-  if (tone === "professional")
-    return "clean sans-serif with strong weight contrast";
-
-  return "clean modern sans-serif (Inter or system-ui)";
+    return `bold display or rounded sans-serif`;
+  if (tone === "professional") return `clean sans-serif with weight contrast`;
+  return `clean modern sans-serif`;
 }
 
-// ─── FONT PAIRS (UI/UX PRO MAX v2.5.0 — 73 pairs condensed) ─────────────────
-// Maps design style and industry to a concrete Google Fonts heading+body pair.
-// Only ONE pair is selected per prompt (1–2 fonts in the final AI output).
+// ─── APPROVED FONTS LIST ──────────────────────────────────────────────────────
+// Always included in every prompt so the AI picks only from these Google Fonts.
 
-export const FONT_PAIRS = {
-  byStyle: {
-    brutalist: {
-      heading: "Space Mono",
-      body: "Space Mono",
-      headingStack: "monospace",
-      bodyStack: "monospace",
-      load: "Space+Mono:wght@400;700",
-    },
-    minimal: {
-      heading: "Inter",
-      body: "Inter",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Inter:wght@400;500;700",
-    },
-    editorial: {
-      heading: "Cormorant Garamond",
-      body: "Libre Baskerville",
-      headingStack: "serif",
-      bodyStack: "serif",
-      load: "Cormorant+Garamond:wght@400;600;700&family=Libre+Baskerville:wght@400;700",
-    },
-    classic: {
-      heading: "Cormorant Garamond",
-      body: "Libre Baskerville",
-      headingStack: "serif",
-      bodyStack: "serif",
-      load: "Cormorant+Garamond:wght@400;600;700&family=Libre+Baskerville:wght@400;700",
-    },
-    playful: {
-      heading: "Fredoka",
-      body: "Nunito",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700",
-    },
-    glassmorphism: {
-      heading: "Space Grotesk",
-      body: "DM Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700",
-    },
-    modern: {
-      heading: "Poppins",
-      body: "Open Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Poppins:wght@400;600;700&family=Open+Sans:wght@400;600",
-    },
-  },
-  byIndustry: {
-    software: {
-      heading: "Space Grotesk",
-      body: "DM Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700",
-    },
-    agency: {
-      heading: "Archivo",
-      body: "Space Grotesk",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Archivo:wght@400;600;700&family=Space+Grotesk:wght@400;500;700",
-    },
-    restaurant: {
-      heading: "Playfair Display",
-      body: "Karla",
-      headingStack: "serif",
-      bodyStack: "sans-serif",
-      load: "Playfair+Display:wght@400;600;700&family=Karla:wght@400;500",
-    },
-    cafe: {
-      heading: "Lora",
-      body: "Raleway",
-      headingStack: "serif",
-      bodyStack: "sans-serif",
-      load: "Lora:wght@400;600;700&family=Raleway:wght@400;500",
-    },
-    yoga: {
-      heading: "Lora",
-      body: "Raleway",
-      headingStack: "serif",
-      bodyStack: "sans-serif",
-      load: "Lora:wght@400;600;700&family=Raleway:wght@400;500",
-    },
-    fitness: {
-      heading: "Barlow Condensed",
-      body: "Barlow",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500",
-    },
-    handwerk: {
-      heading: "Poppins",
-      body: "Open Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Poppins:wght@400;600;700&family=Open+Sans:wght@400;600",
-    },
-    personal: {
-      heading: "Archivo",
-      body: "Space Grotesk",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Archivo:wght@400;600;700&family=Space+Grotesk:wght@400;500;700",
-    },
-    ecommerce: {
-      heading: "Rubik",
-      body: "Nunito Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Rubik:wght@400;500;700&family=Nunito+Sans:wght@400;600",
-    },
-    personaldienst: {
-      heading: "Lexend",
-      body: "Source Sans 3",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Lexend:wght@400;500;700&family=Source+Sans+3:wght@400;600",
-    },
-    other: {
-      heading: "Poppins",
-      body: "Open Sans",
-      headingStack: "sans-serif",
-      bodyStack: "sans-serif",
-      load: "Poppins:wght@400;600;700&family=Open+Sans:wght@400;600",
-    },
-  },
-};
+export const APPROVED_FONTS = `APPROVED GOOGLE FONTS — only use fonts from this list:
 
-// Returns the single best font pair for the given style/tone/industry combination.
-// Priority: style → tone → industry → safe default.
-export function deriveFontPair(style, tone, industry) {
-  // Style has highest priority
-  if (FONT_PAIRS.byStyle[style]) return FONT_PAIRS.byStyle[style];
+Sans-serif / text fonts:
+Inter, Roboto, Open Sans, Lato, Montserrat, Poppins, Oswald, Raleway, Ubuntu,
+Nunito, Rubik, Work Sans, Quicksand, Fira Sans, PT Sans, Karla, Heebo, Arimo,
+Libre Franklin, Josefin Sans, Barlow, Titillium Web, Manrope, DM Sans, Outfit,
+IBM Plex Sans, Plus Jakarta Sans, Kanit, Cabin, Public Sans
 
-  // Tone-based overrides when no style match
-  if (tone === "luxurious" || tone === "formal")
-    return FONT_PAIRS.byStyle.classic;
-  if (tone === "playful" || tone === "youthful")
-    return FONT_PAIRS.byStyle.playful;
+Display / serif / accent / playful fonts:
+Abril Fatface, Righteous, Anton, Archivo Black, Bebas Neue, Cinzel, Lobster,
+Playfair Display, Merriweather, Lora, Fraunces, Cormorant Garamond, Crimson Pro,
+EB Garamond, DM Serif Display, Space Grotesk, Syne, JetBrains Mono, Bungee Spice,
+Michroma, Syncopate, Unbounded, Comfortaa, Fredoka, Baloo 2
 
-  // Fall back to industry, then modern default
-  return FONT_PAIRS.byIndustry[industry] ?? FONT_PAIRS.byStyle.modern;
-}
+Google Fonts <link> format (always load chosen fonts in <head>):
+<link href="https://fonts.googleapis.com/css2?family=FONT+NAME:wght@WEIGHTS&display=swap" rel="stylesheet">
+Example: <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
-// ─── FALLBACK COLOR PALETTES (UI/UX PRO MAX v2.5.0 — 161 types distilled) ────
-// Used when brief.design.colors is not explicitly specified.
-// Format: primary | secondary | accent | bg | fg | note
+Never invent or use a font not on this list.`;
 
-export const FALLBACK_PALETTES = {
-  software: {
-    primary: "#2563EB",
-    secondary: "#3B82F6",
-    accent: "#EA580C",
-    bg: "#F8FAFC",
-    fg: "#1E293B",
-    note: "Trust blue + orange CTA",
-  },
-  agency: {
-    primary: "#EC4899",
-    secondary: "#F472B6",
-    accent: "#0891B2",
-    bg: "#FDF2F8",
-    fg: "#831843",
-    note: "Bold pink + cyan",
-  },
-  restaurant: {
-    primary: "#DC2626",
-    secondary: "#F87171",
-    accent: "#A16207",
-    bg: "#FEF2F2",
-    fg: "#450A0A",
-    note: "Appetizing red + warm gold",
-  },
-  cafe: {
-    primary: "#92400E",
-    secondary: "#B45309",
-    accent: "#C8662B",
-    bg: "#FEF3C7",
-    fg: "#78350F",
-    note: "Warm brown + amber on cream",
-  },
-  yoga: {
-    primary: "#6B7280",
-    secondary: "#78716C",
-    accent: "#0891B2",
-    bg: "#F5F5F0",
-    fg: "#0F172A",
-    note: "Sage neutral + calm teal",
-  },
-  fitness: {
-    primary: "#F97316",
-    secondary: "#FB923C",
-    accent: "#22C55E",
-    bg: "#1F2937",
-    fg: "#F8FAFC",
-    note: "Energy orange + success green (dark)",
-  },
-  handwerk: {
-    primary: "#1E40AF",
-    secondary: "#3B82F6",
-    accent: "#EA580C",
-    bg: "#EFF6FF",
-    fg: "#1E3A8A",
-    note: "Professional blue + urgent orange",
-  },
-  personal: {
-    primary: "#18181B",
-    secondary: "#3F3F46",
-    accent: "#2563EB",
-    bg: "#FAFAFA",
-    fg: "#09090B",
-    note: "Monochrome + blue accent",
-  },
-  ecommerce: {
-    primary: "#059669",
-    secondary: "#10B981",
-    accent: "#EA580C",
-    bg: "#ECFDF5",
-    fg: "#064E3B",
-    note: "Success green + urgency orange",
-  },
-  personaldienst: {
-    primary: "#0369A1",
-    secondary: "#0EA5E9",
-    accent: "#16A34A",
-    bg: "#F0F9FF",
-    fg: "#0C4A6E",
-    note: "Professional blue + success green",
-  },
-  other: {
-    primary: "#0F172A",
-    secondary: "#334155",
-    accent: "#0369A1",
-    bg: "#F8FAFC",
-    fg: "#020617",
-    note: "Professional navy + blue CTA",
-  },
-};
-
-// ─── LANDING PAGE PATTERNS (UI/UX PRO MAX v2.5.0 — 34 patterns distilled) ────
-// Best-fit landing pattern per industry, with CTA placement guidance.
+// ─── LANDING PATTERNS ──────────────────────────────────────────────────────────
 
 export const LANDING_PATTERNS = {
-  software:
-    "Feature-Rich Showcase — Hero + 3-column feature grid + Demo or Pricing section + social proof strip + bottom CTA. Sticky nav. CTA placement: hero (sticky) + after features + bottom.",
-  agency:
-    "Storytelling-Driven — Bold hero with ambition statement + Work/Portfolio grid (hover reveals project details) + Process steps + Client logos + CTA. Numbers show impact.",
-  restaurant:
-    'Feature-Rich Showcase — Full-bleed food-imagery hero + Menu section (second/third section) + Reservation CTA dominant + Gallery + Testimonials. CTA: "Tisch reservieren" in hero and sticky navbar.',
-  cafe: "Minimal & Direct — Warm editorial hero + Menu highlights + Opening hours block + Specials callout + Simple contact. Cozy, inviting feel throughout.",
-  yoga: "Social Proof-Focused — Calm spacious hero + Class schedule table + Trainers grid + Testimonials + Free trial class CTA section. Earth tones, generous whitespace.",
-  fitness:
-    "Feature-Rich Showcase — High-energy hero + Membership plans + Class schedule + Trainers + Trial offer. Bold type and energetic imagery.",
-  handwerk:
-    "Trust & Authority — Hero with phone number prominently displayed + Services grid + Certifications/experience trust strip + Before/After gallery + Contact section with address. Primary CTA: phone call.",
-  personal:
-    "Minimal & Direct — Clean hero with personal photo + Services or Portfolio grid + Skills or About section + Contact. Single-focus, white space dominant.",
-  ecommerce:
-    "Feature-Rich Showcase — Category grid above fold + Bestseller row with product cards + Shipping trust badges + repeat buy CTAs. Shop/Buy buttons prominent throughout.",
-  personaldienst:
-    "Trust & Authority — Hero + Open positions list (job cards) + Benefits icon grid + Application CTA + Testimonials. Professional and approachable for candidates.",
-  other:
-    "Hero + Features + CTA — Clean hero + Services/USP grid + Testimonials strip + Contact CTA. CTA: sticky nav + hero + bottom.",
+  tech: `Hero (bold value prop + demo CTA if USER PROVIDES SUCH INFO) → Social proof bar (logos) → Features grid → How it works (steps) → Pricing → Testimonials → Final CTA strip → Footer`,
+  agency: `Hero (statement + reel/portfolio link) → Selected work grid → Services list → About/Team → Testimonials → Contact CTA → Footer`,
+  handwerk: `Hero (service + local area + call CTA) → Services grid → Why Us (3 trust points) → Testimonials → Service area map → Contact CTA → Footer`,
+  health: `Hero (patient benefit + booking CTA if USER PROVIDES SUCH INFO) → Services cards → Team profiles → Testimonials → FAQ → Booking CTA → Footer`,
+  gastro: `Hero (atmosphere + reservation CTA) → Menu highlights → About/Story → Gallery → Hours & Location → Reservation CTA → Footer`,
+  sport: `Hero (motivation + trial CTA if USER PROVIDES SUCH INFO) → Services/Classes → Benefits strip → Pricing → Trainers → Schedule → CTA → Footer`,
+  brand: `Hero (personal statement) → About → Services/Offerings → Portfolio/Work → Testimonials → Contact → Footer`,
+  industry: `Hero (capability + contact CTA) → Products/Services → Industries served → Capabilities → Certifications/Trust → Contact → Footer`,
+  realestate: `Hero (search bar or featured property + CTA) → Featured listings grid → Services → Team → Testimonials → Contact → Footer`,
+  education: `Hero (outcome promise + enrol CTA if USER PROVIDES SUCH INFO) → Courses/Programmes → Benefits → Instructors → Testimonials → FAQ → Enrol CTA → Footer`,
+  event: `Hero (event name + date + tickets CTA) → About the event → Line-up/Programme → Tickets/Pricing → Venue/Location → Sponsors → FAQ → Footer`,
+  nonprofit: `Hero (mission statement + donate CTA if USER PROVIDES SUCH INFO) → Impact stats → How to help (donate/volunteer/partner) → News/Stories → Partners → Donate CTA → Footer`,
+  corporate: `Hero (positioning + contact CTA) → Key services → Key figures/stats → Leadership → Partners/Clients → Contact → Footer`,
+  portfolio: `Hero (name + role + work CTA) → Selected projects grid → Skills/About → Testimonials → Contact → Footer`,
+  other: `Hero → Services/Features → About → Testimonials → CTA → Footer`,
 };
 
-// ─── UX CORE RULES (UI/UX PRO MAX v2.5.0 — always injected) ─────────────────
-// Condensed from 99-rule UX guidelines + Web accessibility + Performance rules.
-// These apply to EVERY component generated.
+// ─── UX CORE RULES ─────────────────────────────────────────────────────────────
 
-export const UX_CORE_RULES = `UX, ACCESSIBILITY & PERFORMANCE — apply to every component:
+export const UX_CORE_RULES = `UX & VISUAL QUALITY RULES (apply to every section):
 
-NAVIGATION & LAYOUT:
-- Smooth scroll: scroll-behavior: smooth on <html>; sticky nav adds padding-top equal to nav height.
-- Active nav link highlighted (color or underline).
-- z-index scale: 10 (content) / 20 (sticky) / 30 (dropdown) / 50 (modal); never arbitrary large values.
-- Use min-height: 100dvh on mobile; max-width for reading columns; no horizontal scroll on mobile.
-- Reserve space for async content to prevent CLS.
+Spacing:
+- Use a consistent spacing grid. Sectional vertical padding.
+- Never let text or elements touch container edges.
+- Spacing should feel proportional to the element size (buttons get tight padding, sections get generous padding).
 
-ANIMATION:
-- Max 300ms for micro-interactions (150ms for hover). Use transform/opacity only — never animate width/height/top/left.
-- Always respect prefers-reduced-motion: skip or reduce all animations if enabled.
-- Max 1–2 animated elements per view. No infinite decorative animations — only loaders.
-- Easing: ease-out on enter, ease-in on exit; never linear for UI transitions.
+Typography:
+- Max 2 font families per site. Mixing 3+ fonts is banned.
+- Heading hierarchy: H1 (hero, largest) → H2 (section titles) → body → caption.
+- Serif fonts: headings or rare accent only. Never set body text in serif unless the design direction is editorial/luxury.
+- Use italic and font-weight variation freely — they add character without adding fonts.
 
-INTERACTION & FORMS:
-- Every button/card/link: visible hover state + cursor: pointer. Disabled: opacity: 0.5 + cursor: not-allowed.
-- Visible focus rings via CSS outline (keyboard navigation must work).
-- Touch targets: min 44×44px; min 8px gap between adjacent interactive elements.
-- Forms: always visible label (never placeholder-only); validate on blur; semantic input types (email, tel, number); required fields marked; errors shown inline below field.
+Colour:
+- Apply the 3-colour rule: background (60%), text (30%), accent (CTAs and highlights only).
+- Accent colour must not be overused — restrict to buttons, icons, and one highlight per section.
+- Primary background: white or very light. Exception: dark-mode builds.
+- Accessible contrast.
 
-ACCESSIBILITY:
-- Minimum 4.5:1 contrast for body text; 3:1 for large text (WCAG AA).
-- Never convey information by color alone (add icon or text).
-- Descriptive alt text on all meaningful images (empty alt="" for decorative).
-- Sequential heading hierarchy: h1 → h2 → h3 (no skipping).
-- aria-label on all icon-only buttons; semantic HTML: <nav>, <main>, <footer>, <article>, <section>.
-- label[for] on all inputs. role="alert" / aria-live="polite" for dynamic status messages.
+Animations (GSAP — CDN only, no plugins unless ScrollTrigger which is bundled in GSAP 3):
+- Entrance: elements animate in on scroll.
+- NEVER use "shaky", heavy bounce, or rapid jitter animations — always smooth and purposeful.
+- Respect user motion preferences.
 
-TYPOGRAPHY:
-- Body line-height 1.5–1.75; min 16px body text (prevents iOS auto-zoom).
-- Consistent type scale: 12 / 14 / 16 / 18 / 24 / 32 / 48px. Headings clearly differentiated by size + weight.
-- Dark text on light background; white text on dark background.
+Interactive states:
+- Every button and link must have a visible hover state (colour shift, opacity, or subtle scale).
+- Active/pressed buttons: slight scale or background darken.
+- No hover effects on touch-only devices.`;
 
-PERFORMANCE:
-- font-display: swap on all web fonts.
-- Lazy-load all below-fold images (loading="lazy"); always declare width + height on images.
-- Load analytics/third-party scripts async/defer.`;
+// ─── HTML BEST PRACTICES ────────────────────────────────────────────────────────
 
-// ─── HTML BEST PRACTICES (always injected) ───────────────────────────────────
+export const HTML_BEST_PRACTICES = `HTML & CODE QUALITY RULES:
 
-export const HTML_BEST_PRACTICES = `HTML BEST PRACTICES — apply to every page:
-- Use semantic HTML5 elements: <header>, <nav>, <main>, <section>, <article>, <footer>.
-- Every page must be a complete valid HTML5 document: <!doctype html> ... </html>.
-- Use <style> blocks in <head> for all CSS — never inline styles on individual elements.
-- JavaScript (if any): use vanilla JS only, placed in <script> before </body>. No JS libraries (exception: Leaflet.js CDN for maps).
-- Use CSS custom properties (--color-primary, --color-accent) for consistent theming.
-- Responsive layout via CSS Grid and Flexbox; media queries for breakpoints.
-- Never use Tailwind, Bootstrap, or any CSS framework.
-- Never use React, Vue, Angular, or any JavaScript framework.`;
+Structure:
+- Semantic HTML: use <header>, <nav>, <main>, <section>, <article>, <aside>, <footer> appropriately.
+- Every section needs a unique id attribute for anchor linking and scroll-to.
+- <title> and <meta name="description"> must be populated in every page's <head>.
+- Viewport meta tag required: <meta name="viewport" content="width=device-width, initial-scale=1">.
 
-// ─── ICON GUIDELINES ─────────────────────────────────────────────────────────
-// Always use inline SVG — no icon libraries allowed.
+CDN scripts (load in this order, in <head> or just before </body>):
+  1. <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  2. <link href="https://fonts.googleapis.com/css2?family=..." rel="stylesheet"> (Google Fonts)
+  3. <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+  4. <script src="https://unpkg.com/lucide@latest"></script>
+  5. Leaflet (only on pages with maps): <script type="module" src="https://cdn.jsdelivr.net/npm/leaflet-html@0.13.11/+esm"></script>
 
-export const ICON_GUIDELINES = `ICONS — use inline SVG only. Never use any icon library (no lucide-react, no Font Awesome):
-- Embed SVG icons directly in HTML using <svg> elements with width/height attributes.
-- Navigation/UI: draw simple SVG paths for menu (hamburger), X (close), chevrons, arrows.
-- Status: use Unicode ✓ (check), ✗ (cross), ⚠ (warning), ℹ (info) or simple inline SVG.
-- Communication: inline SVG for mail envelope, phone, send icons.
-- Location: inline SVG for map-pin, globe icons.
-- Keep SVG icons small (24×24px) and use currentColor for fill/stroke so they inherit text color.
-- For interactive maps: use OpenStreetMap/Leaflet.js loaded from CDN (no install required).`;
+No npm imports. No React, Vue, Angular. No Bootstrap. No external JS beyond the CDNs listed.
 
-// ─── SECTION-LEVEL DESIGN PATTERNS (UI/UX PRO MAX v2.5.0) ───────────────────
+Lucide icons:
+- Render icons with: <i data-lucide="icon-name" class="w-5 h-5"></i>
+- At end of <body>, call: <script>lucide.createIcons();</script>
+- Always set explicit width/height classes on icon elements.
 
-export const SECTION_DESIGN_PATTERNS = `SECTION-LEVEL DESIGN SYSTEM:
-- Hero CTA buttons: primary = solid brand color, secondary = outline or ghost. Never more than 2 CTAs in the hero.
-- Cards: consistent border-radius matching chosen shape language; subtle box-shadow; hover: slight lift (transform: translateY(-2px) + stronger box-shadow).
-- Stats/numbers: font-variant-numeric: tabular-nums; large bold number + smaller label below; high contrast strip (brand bg or dark).
-- Testimonial cards: blockquote with left border accent OR card with star rating on top; author name + optional company in muted text.
-- Process steps: numbered circle (brand color) + inline SVG icon + short text; horizontal on desktop (display: flex; flex-direction: row), vertical stack on mobile.
-- Pricing cards: 3-column grid; middle "recommended" card elevated (transform: scale(1.05) or border: 2px solid accent + "Empfohlen" badge); feature list with check marks.
-- FAQ: accordion pattern using CSS + minimal JS; question bold; answer slides open; border-bottom separators.
-- Gallery: CSS grid with aspect-ratio: 4/3 uniform tiles; hover: overlay with darkening + optional icon.
-- Partner logos: filter: grayscale(100%) on default, filter: none on hover; horizontal scrolling strip.
-- Footer: dark background; 3–4 columns (links / contact / social / legal); Impressum + Datenschutz always in last column.
+Images:
+- ALL images must be styled <div> placeholder elements — never a broken <img> tag.
+- Example: <div class="w-full aspect-video bg-slate-200 rounded-lg flex items-center justify-center text-slate-400 text-sm" data-slot="hero.image">Hero Image</div>
+- Use /assets/filename.jpg format for real image paths when the user provides them.
 
-RESPONSIVE GRID:
-- 1 column on mobile (<640px), 2 columns on tablet (≥768px), 3–4 columns on desktop (≥1024px).
-- Use CSS Grid with auto-fill/auto-fit minmax() for card grids (responsive without extra breakpoint overrides).
-- Navbar: hamburger button on mobile (toggle with vanilla JS); full horizontal links on desktop (display:none / display:flex via media query).`;
+Forms:
+- Contact form fields: name="name", name="email", name="message" minimum. Add honeypot field. Always mailto function.
+- All inputs need <label> elements (for accessibility).
+- Contact form only in /contact page.
+
+Responsive design:
+- Mobile-first Tailwind classes. Every layout must work at mobile desktop.
+- Use Tailwind responsive prefixes: sm:, md:, lg:, xl: for breakpoints.
+- Mobile hamburger menu: hidden on desktop (lg:hidden), visible on mobile. Toggle with JavaScript.
+- Grids: grid-cols-1 on mobile → grid-cols-2 md:grid-cols-3 on desktop (adjust per content).`;
+
+// ─── ICON GUIDELINES ────────────────────────────────────────────────────────────
+
+export const ICON_GUIDELINES = `ICON USAGE:
+- Primary icon library: Lucide (CDN). Render with <i data-lucide="icon-name" class="w-5 h-5 text-current"></i>.
+- Fallback: inline SVG (only if the required icon is not available in Lucide or you are not sure).
+- Never use emoji as structural icons (only as decorative accents in playful designs).
+- Common Lucide icons for reference: menu, x, chevron-down, arrow-right, check, star, phone, mail, map-pin, calendar, clock, users, building, briefcase, heart, shield, zap, instagram, linkedin, facebook, youtube, twitter, external-link, play-circle, monitor, send.`;
+
+// ─── SECTION DESIGN PATTERNS ────────────────────────────────────────────────────
+// Structural code reference examples — always included in every prompt.
+// These are REFERENCE PATTERNS ONLY. Adapt them heavily to match the design direction.
+// NEVER copy them verbatim — your design must be unique to the brand.
+
+export const SECTION_DESIGN_PATTERNS = `SECTION STRUCTURE REFERENCE PATTERNS
+These are structural guides only. Adapt to the design direction — never copy literally!!!
+
+━━━ NAVBAR REFERENCE PATTERN ━━━
+<header class="fixed top-0 w-full z-50 backdrop-blur-sm bg-white/90 border-b border-slate-200">
+  <nav class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/index.html" class="font-bold text-xl tracking-tight" data-slot="nav.brand">Brand</a>
+    <!-- Desktop links (hidden on mobile) -->
+    <ul class="hidden lg:flex items-center gap-8 text-sm font-medium">
+      <li><a href="#services" class="text-slate-600 hover:text-primary transition-colors">Services</a></li>
+      <li><a href="#about" class="text-slate-600 hover:text-primary transition-colors">About</a></li>
+      <li><a href="/contact.html" class="text-slate-600 hover:text-primary transition-colors">Contact</a></li>
+    </ul>
+    <!-- Desktop CTA -->
+    <a href="/contact.html" class="hidden lg:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity">
+      <i data-lucide="send" class="w-4 h-4"></i> Get in Touch
+    </a>
+    <!-- Mobile hamburger -->
+    <button id="nav-toggle" class="lg:hidden p-2 rounded-md" aria-label="Open menu" aria-expanded="false">
+      <i data-lucide="menu" class="w-6 h-6"></i>
+    </button>
+  </nav>
+  <!-- Mobile fullscreen menu -->
+  <div id="mobile-menu" class="hidden fixed inset-0 bg-white z-40 flex flex-col items-center justify-center gap-10 text-xl font-medium">
+    <button id="nav-close" class="absolute top-5 right-6" aria-label="Close menu">
+      <i data-lucide="x" class="w-7 h-7"></i>
+    </button>
+    <a href="#services" class="hover:text-primary transition-colors">Services</a>
+    <a href="#about" class="hover:text-primary transition-colors">About</a>
+    <a href="/contact.html" class="hover:text-primary transition-colors">Contact</a>
+    <a href="/contact.html" class="mt-4 px-8 py-3 rounded-full bg-primary text-white text-base">Get in Touch</a>
+  </div>
+</header>
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const menu = document.getElementById('mobile-menu');
+  const close = document.getElementById('nav-close');
+  toggle?.addEventListener('click', () => { menu.classList.remove('hidden'); menu.classList.add('flex'); toggle.setAttribute('aria-expanded','true'); });
+  close?.addEventListener('click', () => { menu.classList.add('hidden'); menu.classList.remove('flex'); toggle.setAttribute('aria-expanded','false'); });
+  menu?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { menu.classList.add('hidden'); menu.classList.remove('flex'); }));
+</script>
+EXAMPLES for design adaptation:
+- remove backdrop-blur, use thin border-b only, increase whitespace, reduce nav link weight.
+- floating navbar with box-shadow, offset from top (mt-4 with rounded-xl max-w container).
+- thick border-b (border-b-4 border-black), full black bg, white text, no blur.
+- coloured background, rounded-2xl floating pill shape, logo with illustration.
+NEVER EVER USE THE CODE ABOVE More than 60%!
+
+- Hero:
+<section class="text-gray-600 body-font">
+  <div class="container mx-auto flex px-5 py-24 md:flex-row flex-col items-center">
+    <div class="lg:flex-grow md:w-1/2 lg:pr-24 md:pr-16 flex flex-col md:items-start md:text-left mb-16 md:mb-0 items-center text-center">
+      <h1 class="title-font sm:text-4xl text-3xl mb-4 font-medium text-gray-900">Before they sold out
+        <br class="hidden lg:inline-block">readymade gluten
+      </h1>
+      <p class="mb-8 leading-relaxed">Copper mug try-hard pitchfork pour-over freegan heirloom neutra air plant cold-pressed tacos poke beard tote bag. Heirloom echo park mlkshk tote bag selvage hot chicken authentic tumeric truffaut hexagon try-hard chambray.</p>
+      <div class="flex justify-center">
+        <button class="inline-flex text-white bg-indigo-500 border-0 py-2 px-6 focus:outline-none hover:bg-indigo-600 rounded text-lg">Button</button>
+        <button class="ml-4 inline-flex text-gray-700 bg-gray-100 border-0 py-2 px-6 focus:outline-none hover:bg-gray-200 rounded text-lg">Button</button>
+      </div>
+    </div>
+    <div class="lg:max-w-lg lg:w-full md:w-1/2 w-5/6">
+      <img class="object-cover object-center rounded" alt="hero" src="https://dummyimage.com/720x600">
+    </div>
+  </div>
+</section>
+You can also show the picture above the text, as background (with blur), inside a mockup pr without any picture. Always show a CTA Button (dfault: link to /contact).
+
+-- Breadcrumbs--
+If the user is on a different page (like /contact), use Breadcrumbs under the navbar (or as part of the navbar) but always hide in homepage.
+<nav aria-label="Breadcrumb">
+  <ol class="flex items-stretch gap-2 list-none">
+    <li class="items-center hidden gap-2 md:flex">
+      <a href="#" class="flex max-w-[20ch] items-center gap-1 truncate whitespace-nowrap text-slate-700 transition-colors hover:text-emerald-500">Home</a>
+      <svg xmlns="http://www.w3.org/2000/svg" class="flex-none w-4 h-4 transition-transform stroke-slate-700 md:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true" aria-labelledby="title-01 description-01" role="graphics-symbol">
+        <title id="title-01">Arrow</title>
+        <desc id="description-01">
+          Arrow icon that points to the next page in big screen resolution sizes
+          and previous page in small screen resolution sizes.
+        </desc>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </li>
+    <li class="items-center hidden gap-2 md:flex">
+      <a href="#" class="flex max-w-[20ch] items-center gap-1 truncate whitespace-nowrap text-slate-700 transition-colors hover:text-emerald-500">Projects</a>
+      <svg xmlns="http://www.w3.org/2000/svg" class="flex-none w-4 h-4 transition-transform stroke-slate-700 md:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true" aria-labelledby="title-02description-02" role="graphics-symbol">
+        <title id="title-02">Arrow</title>
+        <desc id="description-02">
+          Arrow icon that points to the next page in big screen resolution sizes
+          and previous page in small screen resolution sizes.
+        </desc>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </li>
+    <li class="flex items-center gap-2">
+      <a href="#" class="flex max-w-[20ch] items-center gap-1 truncate whitespace-nowrap text-slate-700 transition-colors hover:text-emerald-500">UI components</a>
+      <svg xmlns="http://www.w3.org/2000/svg" class="flex-none w-4 h-4 transition-transform stroke-slate-700 md:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true" aria-labelledby="title-03description-03" role="graphics-symbol">
+        <title id="title-03">Arrow</title>
+        <desc id="description-03">
+          Arrow icon that points to the next page in big screen resolution sizes
+          and previous page in small screen resolution sizes.
+        </desc>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </li>
+    <li class="flex items-center flex-1 gap-2">
+      <a href="#" aria-current="page" class="pointer-events-none max-w-[20ch] items-center gap-1 truncate whitespace-nowrap text-slate-400">Project</a>
+    </li>
+  </ol>
+</nav>
+
+━━━ FOOTER REFERENCE PATTERN ━━━
+<footer class="bg-slate-900 text-slate-300 pt-16 pb-8">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Main footer grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
+      <!-- Brand column -->
+      <div class="col-span-2 md:col-span-4 lg:col-span-2">
+        <p class="font-bold text-white text-xl mb-3" data-slot="footer.brand">Brand</p>
+        <p class="text-sm leading-relaxed text-slate-400 max-w-xs" data-slot="footer.tagline">Short brand tagline or description.</p>
+        <!-- Social icons -->
+        <div class="flex gap-4 mt-6">
+          <a href="#" aria-label="Instagram" class="hover:text-white transition-colors">
+            <i data-lucide="instagram" class="w-5 h-5"></i>
+          </a>
+          <a href="#" aria-label="LinkedIn" class="hover:text-white transition-colors">
+            <i data-lucide="linkedin" class="w-5 h-5"></i>
+          </a>
+        </div>
+      </div>
+      <!-- Nav column -->
+      <nav aria-label="Services">
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Services</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition-colors" data-slot="footer.service1">Service One</a></li>
+          <li><a href="#" class="hover:text-white transition-colors" data-slot="footer.service2">Service Two</a></li>
+        </ul>
+      </nav>
+      <!-- Company column -->
+      <nav aria-label="Company">
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Company</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#about" class="hover:text-white transition-colors">About</a></li>
+          <li><a href="/contact.html" class="hover:text-white transition-colors">Contact</a></li>
+        </ul>
+      </nav>
+      <!-- Contact column -->
+      <nav aria-label="Contact info">
+        <h3 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Get in touch</h3>
+        <ul class="space-y-2 text-sm">
+          <li class="flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 shrink-0"></i><a href="mailto:#" class="hover:text-white transition-colors" data-slot="footer.email">email@brand.de</a></li>
+          <li class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 shrink-0"></i><a href="tel:#" class="hover:text-white transition-colors" data-slot="footer.phone">+49 000 000</a></li>
+        </ul>
+      </nav>
+    </div>
+    <!-- Sub-footer legal row -->
+    <div class="pt-8 border-t border-slate-800 flex flex-wrap justify-between items-center gap-4 text-sm text-slate-400">
+      <p data-slot="footer.copyright">&copy; 2024 Brand. Alle Rechte vorbehalten.</p>
+      <nav class="flex gap-6">
+        <a href="/impressum.html" class="hover:text-white transition-colors">Impressum</a>
+        <a href="/datenschutz.html" class="hover:text-white transition-colors">Datenschutz</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+Examples for design adaptation:
+- use near-black bg (not slate-900), cream text, thin dividers, no uppercase labels.
+- white footer with dark text, very sparse — just logo, legal, and 3 links max.
+- black bg, white bold text, thick top border, exposed grid lines.
+- coloured bg (primary dark tint), larger social icons, rounded footer top edge.
+NEVER EVER USE THE CODE ABOVE More than 60%!
+
+━━━ ANTI-PATTERNS — NEVER DO THESE ━━━
+- Abstract node/blob/network decorative elements (banned entirely)
+- Generic SaaS "floating dashboard" mockup visuals
+- Flat solid hero backgrounds (exception: minimalist or luxury styles only)
+- Broken image <img> tags or placeholder text "Image here" without a styled div
+- Large blocking modals or overlays on page load
+- Info text overlaid directly on top of a map (always use separate cards)
+- Low-contrast text (grey on white below WCAG AA)
+- Inconsistent spacing (mixing 12px gaps and 40px gaps in the same section)
+- Missing /contact.html page or missing CTA in navbar and hero
+- if you think that some element or section part is broken or you are not sure if the code will be displayed corretly, do not use it. Instead, focus then on Interface Guidelines and common practises to make sure content gets displayed clean and without errors.
+
+━━━ ALWAYS DO ━━━
+- Every image slot is a styled placeholder <div> with correct aspect-ratio and data-slot
+- 3-colour palette applied consistently across all sections
+- Fully responsive: mobile hamburger, scaled typography, stacked grids at 375px
+- Navbar CTA + Hero CTA + pre-footer CTA all link to /contact.html
+- lucide.createIcons() called at bottom of every page body
+- data-slot on every text node and image placeholder!
+- page and link to /imprint and /privacy in footer (for imrint use user information, privacy make sure to metion that hosting operated by OceanAI but hosting service is Vercel. No data collected (except vercel probably).)
+FOCUS AND DO YOUR BEST ON DESIGN!!
+POLISH THE FUCKING DESIGN!! MAKE IT UNIQUE, but still CLEAN and STRUCTURED`;
