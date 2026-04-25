@@ -31,7 +31,6 @@
 //  deriveFontFromStyle → auto-derives font hint (logic, not prompts)
 //  deriveFontPair      → picks the best Google Fonts pair (logic + data)
 //  FONT_PAIRS          → Google Fonts data (used by deriveFontPair)
-//  FALLBACK_PALETTES   → hex color data (used when user skips color input)
 //  LANDING_PATTERNS    → page-structure hint per industry
 //  UX_CORE_RULES       → always-injected UX/accessibility rules
 //  HTML_BEST_PRACTICES → always-injected HTML rules
@@ -118,10 +117,10 @@ export const PROMPT_DB = {
       brutalist: `BRUTALIST DESIGN SYSTEM — apply these rules to every section:
 • Layout: intentionally raw and irregular. Exposed structural borders. Diagonal or overlapping elements. Asymmetric text blocks. Dense information without softening.
 • Typography: ultra-heavy or condensed display font, uppercase headings. Hierarchy purely through scale. Monospace or grotesque fonts.
-• Colour: near-black and white base + ONE aggressive accent (electric yellow, neon green, blood red). Flat fills, no gradients.
+• Colour: near-black and white base + ONE aggressive accent. Flat fills, no gradients.
 • Components: no border-radius ever (rounded-none everywhere). Thick solid borders. No shadows. Buttons: flat solid with no radius.
 • Imagery: high-contrast, cropped tightly. Treat images as graphic elements. Or no images — pure typography.
-• Animation (GSAP): fast, abrupt — elements snap or crash into position. Short duration (0.2-0.3s), no easing or harsh ease-in.
+• Animation (GSAP): fast, abrupt — elements snap or crash into position. Short duration, no easing or harsh ease-in.
 • Hero: enormous text, possibly bleeding off-screen. Raw, confrontational.`,
 
       luxury: `LUXURY DESIGN SYSTEM — apply these rules to every section:
@@ -137,7 +136,7 @@ export const PROMPT_DB = {
 • Layout: loose and energetic. Blob or organic shapes as background accents. Tilted/rotated decorative elements. Overlapping sections with wave dividers.
 • Typography: bold rounded or expressive display font for headings. Friendly, slightly oversized. Emojis as section accents are allowed.
 • Colour: bright, saturated 3-4 colour palette. Gradient fills on hero and CTA sections. Unexpected combinations (coral + teal, lime + indigo).
-• Components: fully rounded — pill buttons (rounded-full), circular avatars, card border-radius 1.5rem. Bold colour fills. Coloured icon backgrounds.
+• Components: rounded, circular avatars, card border-radius. Bold colour fills. Coloured icon backgrounds.
 • Imagery: illustrations or flat artwork preferred. Photos with coloured overlays.
 • Animation (GSAP): subtle bounce on entry). Hover: scale with transition.
 • Hero: big bold headline with colour-highlighted keywords (e.g. a word in a different colour). Illustration or character. Energetic and inviting.`,
@@ -210,7 +209,7 @@ export const PROMPT_DB = {
   // ─── LEGAL ─────────────────────────────────────────────────────────────────
 
   legal: {
-    footerRequired: `The footer must include text links to /imprint.html ("Imprint") and /privacy.html ("Privacy") — these are required for law compliance. Add both pages to the "pages" JSON output with minimal placeholder content.`,
+    footerRequired: `The footer must include text links to /imprint.html ("Imprint") and /privacy.html ("Privacy") — these are required for law compliance. Add both pages to the "pages" JSON output with real content.`,
     imprintConfirmed: `Imprint page confirmed — generate /imprint.html with full content based on provided company details.`,
     privacyConfirmed: `Privacy page confirmed — generate /privacy.html with full GDPR-compliant privacy policy.`,
   },
@@ -299,12 +298,20 @@ export const PROMPT_DB = {
 
   always: [
     `Every page must start with <!doctype html> and end with </html>.`,
-    `Load CDN scripts in <head> (or just before </body> for GSAP/Lucide): Tailwind v4 browser CDN, GSAP CDN, Lucide CDN. Never use npm imports.`,
+    `Use ONLY HTML + CSS + these CDN libraries — no npm, no React/Vue/Angular, no Bootstrap, no framer-motion:
+   • Tailwind v4:  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+   • GSAP 3.10:    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+   • Lucide:       <script src="https://unpkg.com/lucide@latest"></script>
+   • Leaflet (only on map pages): <script type="module" src="https://cdn.jsdelivr.net/npm/leaflet-html@0.13.11/+esm"></script>`,
     `Initialise Lucide icons with lucide.createIcons() at the end of every page's <body>.`,
     `All images MUST be styled placeholder <div> elements with a defined aspect ratio, background colour, and a descriptive data-slot attribute. Never use broken <img> tags without a src, and never use external image URLs (no picsum, unsplash, etc.). Real image paths use /assets/... format.`,
     `Every text node must carry data-slot="section.element". Every image placeholder must also have data-slot.`,
-    `Navigation uses real file links (/index.html, /contact.html). Never hash-only links (#), never SPA routing.`,
+    `Navigation uses real file links (/index.html, /contact.html, /imprint.html, /privacy.html). Never hash-only links (#), never SPA routing.`,
+    `Make the website UNIQUE for this specific business — never copy reference patterns literally. Cards, layouts, elements must be distinctive yet well structured and aesthetically pleasing.`,
+    `Use as much of the user-provided content as possible.`,
+    `Always use the language of the user inputs for the entire website.`,
     `All pages must be fully responsive — mobile hamburger menu, scaled typography, stacked grids. Test every layout at 375px and 1280px widths.`,
+    `Return plain JSON only — no markdown fences, no explanations, no text outside the JSON object.`,
   ],
 };
 
@@ -331,23 +338,9 @@ Return ONLY JSON in THIS EXACT FORMAT — no markdown fences, no prose, no expla
 OUTPUT CONTRACT:
 - pages  = complete HTML5 documents (<!doctype html> … </html>), one per page
 - assets = expected image paths, always with value "placeholder"
-- slots  = every editable text node, keyed as section.element (e.g. hero.title)
+- slots  = every text node in the whole website, keyed as section.element (e.g. hero.title)
 
-ABSOLUTE RULES — violation is not acceptable:
-1. Every page starts with <!doctype html> and ends with </html>.
-2. Use ONLY HTML + CSS + the following CDN libraries. NO npm, NO React/Vue/Angular, NO Bootstrap, NO framer-motion:
-   Tailwind CSS v4:  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-   GSAP 3.10:        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
-   Lucide icons:     <script src="https://unpkg.com/lucide@latest"></script>
-   Leaflet/maps:     <script type="module" src="https://cdn.jsdelivr.net/npm/leaflet-html@0.13.11/+esm"></script>
-2.1 For the Website Design: never ever copy something. ALWAYS MAKE THE WEBSITE UNIQUE for the specific business. Cards, layouts, elemts must be unique, but still well structured and aesthetically pleasing.
-3. Navigation uses only real file links (/index.html, /contact.html, /imprint, /privacy,...). Never hash-only links, never SPA routing.
-4. Every text node must carry data-slot="section.element". Every image placeholder must have data-slot too.
-5. All images are styled placeholder <div> elements with aspect ratio and a descriptive label. Never broken <img> tags. Asset paths use /assets/...
-6. Call lucide.createIcons() at the end of every page body to render Lucide icons.
-7. Use as much user content as possible.
-8. Always use the language of the user inputs for the whole website. 
-9. Return plain JSON only — no markdown fences, no explanations, no text outside the JSON object.`;
+The full list of hard rules (CDN libraries, image placeholders, data-slot attributes, navigation, JSON-only output, etc.) is given once in the HARD RULES section at the bottom of this prompt — follow them strictly.`;
 
 // ─── SECTION PROMPTS ───────────────────────────────────────────────────────────
 // One function per optional section.
@@ -891,7 +884,7 @@ NEVER EVER USE THE CODE ABOVE More than 60%!
 - Large blocking modals or overlays on page load
 - Info text overlaid directly on top of a map (always use separate cards)
 - Low-contrast text (grey on white below WCAG AA)
-- Inconsistent spacing (mixing 12px gaps and 40px gaps in the same section)
+- Inconsistent spacing
 - Missing /contact.html page or missing CTA in navbar and hero
 - if you think that some element or section part is broken or you are not sure if the code will be displayed corretly, do not use it. Instead, focus then on Interface Guidelines and common practises to make sure content gets displayed clean and without errors.
 

@@ -29,8 +29,11 @@ app.post("/generate", async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 
-  // Log the userPrompt to Railway logs
-  console.log("Generated userPrompt:", userPrompt);
+  // Log the userPrompt as a SINGLE log entry. Railway's log viewer splits on
+  // \n and re-orders lines that share a millisecond timestamp, which makes a
+  // multi-line console.log appear scrambled. JSON-stringifying escapes the
+  // newlines so the entire prompt is one line and cannot be reordered.
+  console.log("Generated userPrompt:", JSON.stringify(userPrompt));
 
   try {
     const sitePackage = await runPipeline(userPrompt);

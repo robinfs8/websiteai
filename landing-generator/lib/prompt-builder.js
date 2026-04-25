@@ -51,9 +51,6 @@ import {
   PROMPT_DB,
   SECTION_PROMPTS,
   GLOBAL_PROMPT,
-  deriveFontFromStyle,
-  deriveFontPair,
-  FALLBACK_PALETTES,
   LANDING_PATTERNS,
   UX_CORE_RULES,
   HTML_BEST_PRACTICES,
@@ -115,7 +112,6 @@ const INDUSTRY_SPECIFIC_MAP = {
   gastro: "restaurant",
   tech: "software",
   sport: "fitness",
-  brand: "personal",
 };
 
 // ─── VALIDATION ───────────────────────────────────────────────────────────────
@@ -158,6 +154,7 @@ export function buildPrompt(brief) {
     PROMPT_DB.system.preamble +
     "\n\n" +
     blocks.join("\n\n") +
+    "\n\n" +
     PROMPT_DB.system.footer
   );
 }
@@ -168,7 +165,7 @@ export function buildPrompt(brief) {
 // ── GLOBAL CONTEXT ────────────────────────────────────────────────────────────
 // Source: GLOBAL_PROMPT (exported from prompt-db.js)
 function globalBlock() {
-  return GLOBAL_PROMPT?.trim() || null;
+  return GLOBAL_PROMPT || null;
 }
 
 // ── COMPANY ───────────────────────────────────────────────────────────────────
@@ -216,10 +213,6 @@ function designBlock(b) {
     if (prompt) lines.push(`- ${prompt}`);
   }
 
-  lines.push(
-    fill(f.typography, { value: deriveFontFromStyle(d.designDirection, null) })
-  );
-
   if (typeof d.darkMode === "boolean")
     lines.push(`- ${PROMPT_DB.design.darkMode[String(d.darkMode)]}`);
 
@@ -231,21 +224,10 @@ function designBlock(b) {
 //         FALLBACK_PALETTES, LANDING_PATTERNS, deriveFontPair  (data)
 //         SECTION_DESIGN_PATTERNS, ICON_GUIDELINES, UX_CORE_RULES, HTML_BEST_PRACTICES
 function uiuxBlock(b) {
-  const d = b.design ?? {};
+  //const d = b.design ?? {};
   const industry = b.basics?.industry ?? "other";
   const u = PROMPT_DB.uiux;
   const lines = [];
-
-  const pair = deriveFontPair(d.designDirection, null, industry);
-  lines.push(u.typography.header);
-  lines.push(fill(u.typography.fonts, pair));
-  lines.push(fill(u.typography.link, pair));
-  lines.push(fill(u.typography.apply, pair));
-
-  if (!d.colors?.trim()) {
-    const palette = FALLBACK_PALETTES[industry] ?? FALLBACK_PALETTES.other;
-    lines.push(fill(u.colors, { industry, ...palette }));
-  }
 
   lines.push(
     fill(u.pattern, {
@@ -253,6 +235,7 @@ function uiuxBlock(b) {
     })
   );
 
+  if (u.typography?.header) lines.push("", u.typography.header);
   lines.push("", APPROVED_FONTS);
   lines.push("", SECTION_DESIGN_PATTERNS);
   lines.push("", ICON_GUIDELINES);
@@ -342,7 +325,15 @@ function industryBlock(b) {
   if (!resolvedKey) return null;
 
   const spec = PROMPT_DB.industrySpecific[resolvedKey];
-  return spec?.base ? `- ${spec.base}` : null;
+  if (!spec) return null;
+
+  const lines = [];
+  if (spec.base) lines.push(`- ${spec.base}`);
+  for (const [key, val] of Object.entries(spec)) {
+    if (key === "base") continue;
+    if (typeof val === "string" && val.trim()) lines.push(`- ${val}`);
+  }
+  return lines.length ? lines.join("\n") : null;
 }
 
 // ── LEGAL ─────────────────────────────────────────────────────────────────────
