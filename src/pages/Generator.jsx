@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase";
 import Navbar from "../Navbar";
 import {
   ArrowLeft,
@@ -9,6 +11,7 @@ import {
   Loader2,
   RotateCcw,
 } from "lucide-react";
+import LoadingOctopusRunner from "../games/LoadingOctopusRunner";
 
 const API_URL = "https://websiteai-backend-production.up.railway.app";
 const FALLBACK_PAGE_NAME = "website-preview.html";
@@ -1056,6 +1059,7 @@ function S_Extras({ brief, update }) {
   );
 }
 
+
 // ─── Final / generate slide ───────────────────────────────────────────────────
 
 function S_Generate({
@@ -1315,23 +1319,50 @@ function S_Generate({
           <p style={{ fontFamily: FONT_BODY, color: MUTED, fontSize: 15 }}>
             Composing layout, typography, and copy. ~30 seconds.
           </p>
+          <LoadingOctopusRunner />
         </div>
       )}
 
-      {error && (
+      {error && !loading && (
         <div
           style={{
             border: "1px solid rgba(220,38,38,0.25)",
             background: "rgba(254,226,226,0.6)",
             color: "#b91c1c",
-            padding: "16px 20px",
+            padding: "18px 20px",
             borderRadius: 16,
             fontFamily: FONT_BODY,
             fontSize: 14,
             marginTop: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
-          {error}
+          <span style={{ flex: 1, minWidth: 220 }}>{error}</span>
+          <button
+            onClick={onGenerate}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              borderRadius: 999,
+              background: "#b91c1c",
+              color: "#fff",
+              border: "none",
+              fontFamily: FONT_BODY,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <RotateCcw size={13} />
+            Regenerate
+          </button>
         </div>
       )}
 
@@ -1493,6 +1524,7 @@ function loadJson(key) {
 
 export default function Generator() {
   const navigate = useNavigate();
+  const [authUser, setAuthUser] = useState(undefined); // undefined = loading
   const [step, setStep] = useState(0);
   const [brief, setBrief] = useState(() => {
     const saved = loadJson(BRIEF_STORAGE_KEY);
@@ -1512,6 +1544,15 @@ export default function Generator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const abortRef = useRef(null);
+
+  // Auth guard — redirect to sign-in if not authenticated.
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setAuthUser(u ?? null);
+      if (u === null) navigate("/waitlist", { replace: true, state: { from: "/generate" } });
+    });
+    return unsub;
+  }, [navigate]);
 
   useEffect(() => {
     try {
@@ -1547,26 +1588,44 @@ export default function Generator() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Hard client-side cap — backend timeout is 120s; allow a small buffer
+    // before we give up so the user is never stuck on the loading screen.
+    const CLIENT_TIMEOUT_MS = 260_000;
+    const timeoutId = setTimeout(() => controller.abort("timeout"), CLIENT_TIMEOUT_MS);
+
     setLoading(true);
     setError("");
     setGeneratedPages([]);
     setActivePage("");
     try {
+      const idToken = await authUser.getIdToken();
       const res = await fetch(`${API_URL}/generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ brief }),
         signal: controller.signal,
       });
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        throw new Error(json?.error ?? "Request failed");
+        throw new Error(
+          json?.error ?? `Request failed (${res.status}). Please try again.`
+        );
       }
-      const json = await res.json();
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        throw new Error(
+          "The AI returned an unreadable response. Please regenerate."
+        );
+      }
       const pages = extractPagesFromResponse(json);
       if (pages.length === 0) {
         throw new Error(
-          "Unable to generate website pages. Please try again in a moment."
+          "The AI returned an invalid format. Please regenerate."
         );
       }
       setGeneratedPages(pages);
@@ -1591,9 +1650,19 @@ export default function Generator() {
         console.warn("[generator] localStorage save failed:", storageErr);
       }
     } catch (err) {
-      if (err.name === "AbortError") return;
-      setError(err.message);
+      if (err.name === "AbortError") {
+        if (controller.signal.reason === "timeout") {
+          setError(
+            "The AI took too long to respond. Please regenerate."
+          );
+        } else {
+          return;
+        }
+      } else {
+        setError(err.message);
+      }
     } finally {
+      clearTimeout(timeoutId);
       if (abortRef.current === controller) {
         abortRef.current = null;
         setLoading(false);
@@ -1648,6 +1717,9 @@ export default function Generator() {
         return true;
     }
   };
+
+  // Waiting for Firebase to resolve auth state — render nothing to avoid flash.
+  if (authUser === undefined) return null;
 
   const isLast = step === SLIDES.length - 1;
   const SlideComp = SLIDES[step].component;

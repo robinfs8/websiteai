@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase";
 import {
   ArrowLeft,
   Download,
@@ -13,6 +15,11 @@ import {
   Rocket,
   ExternalLink,
   X,
+  Pencil,
+  Sparkles,
+  Send,
+  Type,
+  Image as ImageIcon,
 } from "lucide-react";
 import JSZip from "jszip";
 
@@ -23,7 +30,6 @@ const EDIT_STATE_KEY = "websiteai:editorState";
 const IMAGE_SLOT_PATTERN =
   /(image|photo|picture|gallery|hero|logo|avatar|banner|cover|thumb|illustration)/i;
 
-// ─── Theme tokens (match Generator.jsx) ───────────────────────────────────────
 const ACCENT = "#494fdf";
 const INK = "#0f1115";
 const MUTED = "#5b6470";
@@ -50,13 +56,14 @@ function formatSectionName(prefix) {
   );
 }
 
-
+function slotFieldLabel(key) {
+  const suffix = key.split(".").slice(1).join(" ").replace(/_/g, " ");
+  return suffix.charAt(0).toUpperCase() + suffix.slice(1);
+}
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
-
-// ─── Sample data for developer testing ────────────────────────────────────────
 
 const SAMPLE_PACKAGE = {
   pages: {
@@ -100,8 +107,6 @@ const SAMPLE_PACKAGE = {
   },
   assets: {},
 };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function loadStoredPackage() {
   try {
@@ -298,27 +303,38 @@ function dataUrlToBytes(dataUrl) {
 
 // ─── UI components ────────────────────────────────────────────────────────────
 
-function GroupHeader({ name, isFirst }) {
+function SectionLabel({ name, isFirst }) {
   return (
-    <div
-      style={{
-        marginTop: isFirst ? 0 : 24,
-        marginBottom: 10,
-        paddingBottom: 8,
-      }}
-    >
+    <div style={{ marginTop: isFirst ? 0 : 20, marginBottom: 8 }}>
       <span
         style={{
-          fontSize: 11,
+          fontSize: 10,
           fontFamily: FONT_BODY,
-          fontWeight: 600,
+          fontWeight: 700,
           textTransform: "uppercase",
-          letterSpacing: "0.06em",
+          letterSpacing: "0.08em",
           color: MUTED,
         }}
       >
         {formatSectionName(name)}
       </span>
+    </div>
+  );
+}
+
+function FieldLabel({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        fontFamily: FONT_BODY,
+        fontWeight: 500,
+        color: "#8b929e",
+        marginBottom: 4,
+        paddingLeft: 1,
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -341,8 +357,8 @@ function AutoGrowTextarea({ value, onChange }) {
         width: "100%",
         background: SOFT,
         border: `1.5px solid transparent`,
-        borderRadius: 10,
-        padding: "9px 12px",
+        borderRadius: 8,
+        padding: "8px 10px",
         fontSize: 13,
         color: INK,
         fontFamily: FONT_BODY,
@@ -351,7 +367,7 @@ function AutoGrowTextarea({ value, onChange }) {
         resize: "none",
         overflow: "hidden",
         lineHeight: 1.55,
-        transition: "border-color 0.2s, background 0.2s",
+        transition: "border-color 0.15s, background 0.15s",
       }}
       onFocus={(e) => {
         e.target.style.borderColor = ACCENT;
@@ -365,14 +381,6 @@ function AutoGrowTextarea({ value, onChange }) {
   );
 }
 
-function TextSlotField({ slot, value, onChange }) {
-  return (
-    <div style={{ marginBottom: 6 }}>
-      <AutoGrowTextarea value={value} onChange={onChange} />
-    </div>
-  );
-}
-
 function ImageSlotCard({ slot, asset, onUpload, onClear }) {
   const inputRef = useRef(null);
 
@@ -383,12 +391,12 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
   };
 
   return (
-    <div style={{ marginBottom: 6 }}>
+    <div style={{ marginBottom: 4 }}>
       {asset?.dataUrl ? (
         <div
           style={{
             position: "relative",
-            borderRadius: 10,
+            borderRadius: 8,
             overflow: "hidden",
             aspectRatio: "16/9",
             background: SOFT,
@@ -411,7 +419,7 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
             <button
               onClick={() => inputRef.current?.click()}
               style={{
-                padding: "5px 10px",
+                padding: "4px 9px",
                 fontSize: 11,
                 fontFamily: FONT_BODY,
                 fontWeight: 600,
@@ -419,7 +427,7 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
                 background: "rgba(15,17,21,0.65)",
                 backdropFilter: "blur(8px)",
                 border: "none",
-                borderRadius: 6,
+                borderRadius: 5,
                 cursor: "pointer",
               }}
             >
@@ -428,21 +436,21 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
             <button
               onClick={onClear}
               style={{
-                padding: "5px 8px",
+                padding: "4px 7px",
                 fontSize: 11,
                 fontFamily: FONT_BODY,
                 color: "#fff",
                 background: "rgba(15,17,21,0.65)",
                 backdropFilter: "blur(8px)",
                 border: "none",
-                borderRadius: 6,
+                borderRadius: 5,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
               }}
               title="Remove image"
             >
-              <Trash2 size={11} />
+              <Trash2 size={10} />
             </button>
           </div>
         </div>
@@ -451,10 +459,10 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
           onClick={() => inputRef.current?.click()}
           style={{
             width: "100%",
-            padding: "18px 0",
+            padding: "14px 0",
             background: SOFT,
             border: `1.5px dashed ${HAIR}`,
-            borderRadius: 10,
+            borderRadius: 8,
             cursor: "pointer",
             display: "flex",
             flexDirection: "column",
@@ -462,25 +470,22 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
             justifyContent: "center",
             gap: 4,
             color: "#a3a9b3",
-            transition: "border-color 0.2s, color 0.2s, background 0.2s",
+            transition: "border-color 0.15s, color 0.15s",
             fontFamily: FONT_BODY,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = ACCENT;
             e.currentTarget.style.color = ACCENT;
-            e.currentTarget.style.background = "rgba(73,79,223,0.03)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = HAIR;
             e.currentTarget.style.color = "#a3a9b3";
-            e.currentTarget.style.background = SOFT;
           }}
         >
-          <Upload size={14} />
+          <Upload size={13} />
           <span style={{ fontSize: 11, fontWeight: 500 }}>Upload image</span>
         </button>
       )}
-
       <input
         ref={inputRef}
         type="file"
@@ -495,11 +500,42 @@ function ImageSlotCard({ slot, asset, onUpload, onClear }) {
   );
 }
 
+// ─── Sidebar toggle button ────────────────────────────────────────────────────
+
+function TabBtn({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 5,
+        padding: "6px 0",
+        borderRadius: 7,
+        border: "none",
+        cursor: "pointer",
+        background: active ? "#fff" : "transparent",
+        color: active ? INK : MUTED,
+        fontSize: 12,
+        fontFamily: FONT_BODY,
+        fontWeight: 500,
+        boxShadow: active ? "0 1px 3px rgba(15,17,21,0.08)" : "none",
+        transition: "all 0.15s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Editor() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [authUser, setAuthUser] = useState(undefined);
   const [pkg, setPkg] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
   const [slots, setSlots] = useState({});
@@ -511,8 +547,42 @@ export default function Editor() {
   const [deploying, setDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState(null);
   const [deployError, setDeployError] = useState("");
+  const [persistedUrl, setPersistedUrl] = useState(null);
   const [frameKey, setFrameKey] = useState(0);
   const [importError, setImportError] = useState("");
+
+  // Sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState("text");
+
+  // AI Edit
+  const [aiEditOpen, setAiEditOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setAuthUser(u ?? null);
+      if (u === null)
+        navigate("/waitlist", { replace: true, state: { from: "/editor" } });
+    });
+    return unsub;
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    authUser.getIdToken().then((idToken) =>
+      fetch(`${API_URL}/site-info`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.netlify?.url) setPersistedUrl(data.netlify.url);
+        })
+        .catch(() => {})
+    );
+  }, [authUser]);
 
   useEffect(() => {
     if (!pkg) return;
@@ -766,10 +836,14 @@ export default function Editor() {
     setDeployError("");
     setDeployResult(null);
     try {
+      const idToken = await authUser.getIdToken();
       const blob = await buildZipBlob();
       const res = await fetch(`${API_URL}/deploy`, {
         method: "POST",
-        headers: { "Content-Type": "application/zip" },
+        headers: {
+          "Content-Type": "application/zip",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: blob,
       });
       const json = await res.json().catch(() => null);
@@ -778,6 +852,7 @@ export default function Editor() {
       }
       if (!json?.url) throw new Error("Deploy succeeded but no URL returned");
       setDeployResult(json);
+      setPersistedUrl(json.url);
     } catch (err) {
       console.error("Deploy failed", err);
       setDeployError(err.message || "Deploy failed");
@@ -786,31 +861,45 @@ export default function Editor() {
     }
   };
 
-  const importFromFile = async (file) => {
-    if (!file) return;
+  const submitAiEdit = async () => {
+    if (!aiPrompt.trim() || aiLoading || !authUser) return;
+    setAiLoading(true);
+    setAiError("");
     try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      if (
-        !isPlainObject(parsed) ||
-        !isPlainObject(parsed.pages) ||
-        !isPlainObject(parsed.slots) ||
-        !isPlainObject(parsed.assets)
-      ) {
-        throw new Error('JSON must contain "pages", "slots" and "assets".');
+      const idToken = await authUser.getIdToken();
+      const res = await fetch(`${API_URL}/ai-edit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          slots,
+          pages: pkg.pages,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "AI edit failed");
+      if (json.slots && typeof json.slots === "object") {
+        setSlots((prev) => ({ ...prev, ...json.slots }));
       }
-      hydrate(parsed);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-      } catch {
-        /* ignore */
+      if (json.pages && typeof json.pages === "object") {
+        setPkg((prev) => ({ ...prev, pages: json.pages }));
       }
+      setFrameKey((k) => k + 1);
+      setAiEditOpen(false);
+      setAiPrompt("");
     } catch (err) {
-      setImportError(err.message);
+      setAiError(err.message || "AI edit failed");
+    } finally {
+      setAiLoading(false);
     }
   };
 
-  // ─── Empty state ─────────────────────────────────────────────────────────────
+  if (authUser === undefined) return null;
+
+  // ─── Empty state ──────────────────────────────────────────────────────────────
   if (!pkg) {
     return (
       <div
@@ -842,7 +931,6 @@ export default function Editor() {
               fontWeight: 700,
               letterSpacing: "-0.025em",
               color: INK,
-              marginBottom: 8,
               margin: 0,
             }}
           >
@@ -877,31 +965,6 @@ export default function Editor() {
             >
               Go to Generator
             </button>
-            <label
-              style={{
-                width: "100%",
-                textAlign: "center",
-                background: "#fff",
-                border: `1px solid ${HAIR}`,
-                color: INK,
-                borderRadius: 999,
-                padding: "13px 0",
-                fontSize: 14,
-                fontWeight: 500,
-                fontFamily: FONT_BODY,
-                cursor: "pointer",
-                boxSizing: "border-box",
-                display: "block",
-              }}
-            >
-              Upload JSON file
-              <input
-                type="file"
-                accept="application/json"
-                style={{ display: "none" }}
-                onChange={(e) => importFromFile(e.target.files?.[0])}
-              />
-            </label>
             <button
               onClick={() => hydrate(SAMPLE_PACKAGE)}
               style={{
@@ -975,8 +1038,7 @@ export default function Editor() {
     );
   }
 
-  const pages = Object.keys(pkg.pages);
-
+  // ─── Main editor ──────────────────────────────────────────────────────────────
   return (
     <div
       style={{
@@ -989,161 +1051,99 @@ export default function Editor() {
         overflow: "hidden",
       }}
     >
-      {/* ── Single horizontal toolbar ────────────────────────────────────── */}
+      {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <header
         style={{
           flexShrink: 0,
+          height: 54,
           background: "#fff",
           borderBottom: `1px solid ${HAIR}`,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 16px",
+          gap: 12,
           zIndex: 10,
         }}
       >
-        <div
-          style={{
-            padding: "0 20px",
-            height: 60,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          {/* Left: back + title */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <button
-              onClick={() => navigate("/generate")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13,
-                color: MUTED,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: FONT_BODY,
-                fontWeight: 500,
-                padding: "8px 10px",
-                marginLeft: -10,
-                borderRadius: 8,
-                transition: "color 0.2s, background 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = INK;
-                e.currentTarget.style.background = SOFT;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = MUTED;
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              <ArrowLeft size={14} />
-              Back
-            </button>
-            <span
-              style={{
-                fontSize: 15,
-                fontFamily: FONT_DISPLAY,
-                fontWeight: 700,
-                color: INK,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Editor
-            </span>
-          </div>
-
-          {/* Middle: device toggle + refresh + page tabs */}
-          <div
+        {/* Left: back + title */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => navigate("/generate")}
             style={{
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
-              gap: 10,
-              flex: 1,
-              justifyContent: "center",
-              minWidth: 0,
+              gap: 5,
+              fontSize: 13,
+              color: MUTED,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: FONT_BODY,
+              fontWeight: 500,
+              padding: "6px 8px",
+              marginLeft: -8,
+              borderRadius: 7,
+              transition: "color 0.15s, background 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = INK;
+              e.currentTarget.style.background = SOFT;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = MUTED;
+              e.currentTarget.style.background = "transparent";
             }}
           >
-            <div
+            <ArrowLeft size={14} />
+            Back
+          </button>
+
+          <div
+            style={{ width: 1, height: 16, background: HAIR, flexShrink: 0 }}
+          />
+
+          <span
+            style={{
+              fontSize: 14,
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 700,
+              color: INK,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Editor
+          </span>
+        </div>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Right: url + actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Deployed URL */}
+          {persistedUrl && (
+            <a
+              href={persistedUrl}
+              target="_blank"
+              rel="noreferrer"
               style={{
-                display: "flex",
-                gap: 2,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                color: MUTED,
+                textDecoration: "none",
+                fontFamily: FONT_BODY,
+                fontWeight: 400,
                 background: SOFT,
                 border: `1px solid ${HAIR}`,
-                borderRadius: 10,
-                padding: 3,
-              }}
-            >
-              <button
-                onClick={() => setPreviewMode("desktop")}
-                title="Desktop"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "6px 12px",
-                  borderRadius: 7,
-                  border: "none",
-                  cursor: "pointer",
-                  background:
-                    previewMode === "desktop" ? "#fff" : "transparent",
-                  color: previewMode === "desktop" ? INK : MUTED,
-                  fontSize: 12,
-                  fontFamily: FONT_BODY,
-                  fontWeight: 500,
-                  boxShadow:
-                    previewMode === "desktop"
-                      ? "0 1px 3px rgba(15,17,21,0.08)"
-                      : "none",
-                  transition: "all 0.2s",
-                }}
-              >
-                <Monitor size={13} />
-                Desktop
-              </button>
-              <button
-                onClick={() => setPreviewMode("mobile")}
-                title="Mobile"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "6px 12px",
-                  borderRadius: 7,
-                  border: "none",
-                  cursor: "pointer",
-                  background: previewMode === "mobile" ? "#fff" : "transparent",
-                  color: previewMode === "mobile" ? INK : MUTED,
-                  fontSize: 12,
-                  fontFamily: FONT_BODY,
-                  fontWeight: 500,
-                  boxShadow:
-                    previewMode === "mobile"
-                      ? "0 1px 3px rgba(15,17,21,0.08)"
-                      : "none",
-                  transition: "all 0.2s",
-                }}
-              >
-                <Smartphone size={13} />
-                Mobile
-              </button>
-            </div>
-
-            <button
-              onClick={() => setFrameKey((k) => k + 1)}
-              title="Refresh preview"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 34,
-                height: 34,
-                borderRadius: 9,
-                border: `1px solid ${HAIR}`,
-                background: "#fff",
-                cursor: "pointer",
-                color: MUTED,
-                transition: "color 0.2s, border-color 0.2s",
+                padding: "5px 10px",
+                borderRadius: 7,
+                maxWidth: 220,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                transition: "color 0.15s, border-color 0.15s",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = ACCENT;
@@ -1154,74 +1154,30 @@ export default function Editor() {
                 e.currentTarget.style.borderColor = HAIR;
               }}
             >
-              <RefreshCw size={13} />
-            </button>
+              <ExternalLink size={10} />
+              {persistedUrl.replace(/^https?:\/\//, "")}
+            </a>
+          )}
 
-            {pages.length > 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 4,
-                  background: SOFT,
-                  border: `1px solid ${HAIR}`,
-                  borderRadius: 10,
-                  padding: 3,
-                  overflowX: "auto",
-                  maxWidth: 360,
-                }}
-              >
-                {pages.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setActivePage(p);
-                      setFrameKey((k) => k + 1);
-                    }}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 7,
-                      border: "none",
-                      cursor: "pointer",
-                      background: activePage === p ? "#fff" : "transparent",
-                      color: activePage === p ? INK : MUTED,
-                      fontSize: 12,
-                      fontFamily: FONT_BODY,
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                      boxShadow:
-                        activePage === p
-                          ? "0 1px 3px rgba(15,17,21,0.08)"
-                          : "none",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    {p.replace(/\.html$/, "")}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Right: deploy + download */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Publish Updates */}
           <button
             onClick={deployToNetlify}
             disabled={deploying}
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              padding: "10px 18px",
+              gap: 6,
+              padding: "7px 14px",
               background: "#fff",
               color: deploying ? MUTED : INK,
               border: `1px solid ${HAIR}`,
-              borderRadius: 999,
+              borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
               fontFamily: FONT_BODY,
               cursor: deploying ? "not-allowed" : "pointer",
-              opacity: deploying ? 0.7 : 1,
-              transition: "all 0.2s",
+              opacity: deploying ? 0.6 : 1,
+              transition: "all 0.15s",
             }}
             onMouseEnter={(e) => {
               if (deploying) return;
@@ -1235,100 +1191,94 @@ export default function Editor() {
             }}
           >
             {deploying ? (
-              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+              <Loader2
+                size={13}
+                style={{ animation: "spin 1s linear infinite" }}
+              />
             ) : (
-              <Rocket size={14} />
+              <Rocket size={13} />
             )}
-            {deploying ? "Deploying…" : "Deploy"}
+            {deploying ? "Publishing…" : "Publish"}
           </button>
+
+          {/* Download */}
           <button
             onClick={downloadZip}
             disabled={downloading}
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              padding: "10px 20px",
+              gap: 6,
+              padding: "7px 14px",
               background: downloading || downloaded ? SOFT : ACCENT,
               color: downloading || downloaded ? MUTED : "#fff",
               border: "none",
-              borderRadius: 999,
+              borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
               fontFamily: FONT_BODY,
               cursor: downloading ? "not-allowed" : "pointer",
-              opacity: downloading ? 0.7 : 1,
-              transition: "all 0.2s",
+              transition: "all 0.15s",
               boxShadow:
                 downloading || downloaded
                   ? "none"
-                  : "0 8px 20px rgba(73,79,223,0.28)",
+                  : "0 4px 14px rgba(73,79,223,0.3)",
             }}
           >
             {downloading ? (
               <Loader2
-                size={14}
+                size={13}
                 style={{ animation: "spin 1s linear infinite" }}
               />
             ) : downloaded ? (
-              <Check size={14} />
+              <Check size={13} />
             ) : (
-              <Download size={14} />
+              <Download size={13} />
             )}
-            {downloading
-              ? "Packaging…"
-              : downloaded
-              ? "Downloaded"
-              : "Download"}
+            {downloading ? "Packing…" : downloaded ? "Done" : "Download"}
           </button>
-          </div>
+
+          {/* Edit toggle */}
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              background: sidebarOpen ? INK : SOFT,
+              color: sidebarOpen ? "#fff" : INK,
+              border: "none",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT_BODY,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            <Pencil size={13} />
+            Edit
+          </button>
         </div>
       </header>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-        <aside
+      {/* ── Content: preview + sidebar ──────────────────────────────────────── */}
+      <div
+        style={{
+          flex: 1,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Preview area */}
+        <div
           style={{
-            width: "clamp(280px, 22vw, 380px)",
-            flexShrink: 0,
-            background: "#fff",
-            borderRight: `1px solid ${HAIR}`,
-            overflowY: "auto",
-          }}
-        >
-          <div style={{ padding: "18px 16px 40px" }}>
-            {groupedSections.map((section, idx) => (
-              <div key={section.name}>
-                <GroupHeader name={section.name} isFirst={idx === 0} />
-                {section.imageItems.map(({ slot, assetName, asset }) => (
-                  <ImageSlotCard
-                    key={slot.key}
-                    slot={slot}
-                    asset={asset}
-                    onUpload={handleImageUpload(slot, assetName)}
-                    onClear={handleImageClear(assetName)}
-                  />
-                ))}
-                {section.textItems.map((slot) => (
-                  <TextSlotField
-                    key={slot.key}
-                    slot={slot}
-                    value={slots[slot.key] ?? slot.defaultText}
-                    onChange={handleSlotChange(slot.key)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        {/* ── Preview ─────────────────────────────────────────────────────── */}
-        <main
-          style={{
-            flex: 1,
+            position: "absolute",
+            inset: 0,
+            background: SOFT,
             display: "flex",
             flexDirection: "column",
-            background: SOFT,
             overflow: "hidden",
           }}
         >
@@ -1337,9 +1287,10 @@ export default function Editor() {
               flex: 1,
               overflow: "auto",
               display: "flex",
-              alignItems: previewMode === "mobile" ? "flex-start" : "stretch",
+              alignItems:
+                previewMode === "mobile" ? "flex-start" : "stretch",
               justifyContent: "center",
-              padding: previewMode === "mobile" ? "32px 24px" : "24px",
+              padding: previewMode === "mobile" ? "28px 24px" : "16px",
             }}
           >
             {previewMode === "desktop" ? (
@@ -1348,88 +1299,95 @@ export default function Editor() {
                   flex: 1,
                   display: "flex",
                   flexDirection: "column",
-                  borderRadius: 16,
+                  borderRadius: 14,
                   overflow: "hidden",
                   boxShadow:
-                    "0 24px 80px rgba(15,17,21,0.10), 0 4px 16px rgba(15,17,21,0.04)",
+                    "0 20px 60px rgba(15,17,21,0.08), 0 2px 8px rgba(15,17,21,0.04)",
                   border: `1px solid ${HAIR}`,
-                  minHeight: 0,
                   background: "#fff",
+                  minHeight: 0,
                 }}
               >
+                {/* Browser chrome */}
                 <div
                   style={{
                     background: SOFT,
-                    height: 38,
+                    height: 36,
                     display: "flex",
                     alignItems: "center",
-                    padding: "0 14px",
+                    padding: "0 12px",
                     gap: 8,
                     flexShrink: 0,
                     borderBottom: `1px solid ${HAIR}`,
                   }}
                 >
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#ff5f57",
-                      }}
-                    />
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#febc2e",
-                      }}
-                    />
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#28c840",
-                      }}
-                    />
+                  <div style={{ display: "flex", gap: 5 }}>
+                    {["#ff5f57", "#febc2e", "#28c840"].map((c) => (
+                      <div
+                        key={c}
+                        style={{
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
+                          background: c,
+                        }}
+                      />
+                    ))}
                   </div>
                   <div
                     style={{
                       flex: 1,
-                      maxWidth: 380,
+                      maxWidth: 340,
                       background: "#fff",
-                      borderRadius: 6,
-                      height: 22,
-                      marginLeft: 10,
+                      borderRadius: 5,
+                      height: 20,
+                      marginLeft: 8,
                       display: "flex",
                       alignItems: "center",
-                      padding: "0 10px",
-                      fontSize: 11,
+                      padding: "0 8px",
+                      fontSize: 10,
                       color: MUTED,
                       border: `1px solid ${HAIR}`,
                       fontFamily: FONT_BODY,
                     }}
                   >
-                    {activePage}
+                    {persistedUrl
+                      ? persistedUrl.replace(/^https?:\/\//, "")
+                      : activePage}
                   </div>
+                  <button
+                    onClick={() => setFrameKey((k) => k + 1)}
+                    title="Refresh"
+                    style={{
+                      marginLeft: "auto",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 24,
+                      height: 24,
+                      borderRadius: 5,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      color: MUTED,
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = ACCENT)
+                    }
+                    onMouseLeave={(e) => (e.currentTarget.style.color = MUTED)}
+                  >
+                    <RefreshCw size={11} />
+                  </button>
                 </div>
                 <iframe
                   key={frameKey}
-                  title="Edited preview"
+                  title="Preview"
                   srcDoc={previewHtml}
                   sandbox="allow-scripts allow-forms"
-                  style={{
-                    flex: 1,
-                    border: 0,
-                    background: "white",
-                    minHeight: 600,
-                  }}
+                  style={{ flex: 1, border: 0, background: "white", minHeight: 600 }}
                 />
               </div>
             ) : (
-              /* ── Cleaner mobile mockup ───────────────────────────────── */
               <div
                 style={{
                   background: "#0f1115",
@@ -1441,7 +1399,6 @@ export default function Editor() {
                   flexShrink: 0,
                 }}
               >
-                {/* Dynamic island */}
                 <div
                   style={{
                     position: "absolute",
@@ -1455,7 +1412,6 @@ export default function Editor() {
                     zIndex: 2,
                   }}
                 />
-                {/* Screen */}
                 <div
                   style={{
                     width: 360,
@@ -1469,29 +1425,526 @@ export default function Editor() {
                 >
                   <iframe
                     key={frameKey}
-                    title="Edited preview (mobile)"
+                    title="Preview mobile"
                     srcDoc={previewHtml}
                     sandbox="allow-scripts allow-forms"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      border: 0,
-                    }}
+                    style={{ width: "100%", height: "100%", border: 0 }}
                   />
                 </div>
               </div>
             )}
           </div>
-        </main>
+        </div>
+
+        {/* ── Right sidebar overlay ──────────────────────────────────────── */}
+        {sidebarOpen && (
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 340,
+              background: "#fff",
+              borderLeft: `1px solid ${HAIR}`,
+              boxShadow: "-12px 0 40px rgba(15,17,21,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              zIndex: 20,
+            }}
+          >
+            {/* Sidebar header */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "14px 16px 12px",
+                borderBottom: `1px solid ${HAIR}`,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              {/* Title row */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: INK,
+                    fontFamily: FONT_BODY,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Edit Content
+                </span>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: MUTED,
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = SOFT;
+                    e.currentTarget.style.color = INK;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = MUTED;
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Device toggle */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 2,
+                  background: SOFT,
+                  border: `1px solid ${HAIR}`,
+                  borderRadius: 9,
+                  padding: 3,
+                }}
+              >
+                <TabBtn
+                  active={previewMode === "desktop"}
+                  onClick={() => setPreviewMode("desktop")}
+                >
+                  <Monitor size={11} />
+                  Desktop
+                </TabBtn>
+                <TabBtn
+                  active={previewMode === "mobile"}
+                  onClick={() => setPreviewMode("mobile")}
+                >
+                  <Smartphone size={11} />
+                  Mobile
+                </TabBtn>
+              </div>
+
+              {/* Text / Images tab */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 2,
+                  background: SOFT,
+                  border: `1px solid ${HAIR}`,
+                  borderRadius: 9,
+                  padding: 3,
+                }}
+              >
+                <TabBtn
+                  active={sidebarTab === "text"}
+                  onClick={() => setSidebarTab("text")}
+                >
+                  <Type size={11} />
+                  Text
+                </TabBtn>
+                <TabBtn
+                  active={sidebarTab === "images"}
+                  onClick={() => setSidebarTab("images")}
+                >
+                  <ImageIcon size={11} />
+                  Images
+                </TabBtn>
+              </div>
+            </div>
+
+            {/* Sidebar scrollable content */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 24px" }}>
+              {sidebarTab === "text" ? (
+                <>
+                  {groupedSections.map((section, idx) =>
+                    section.textItems.length > 0 ? (
+                      <div key={section.name}>
+                        <SectionLabel name={section.name} isFirst={idx === 0} />
+                        {section.textItems.map((slot) => (
+                          <div key={slot.key} style={{ marginBottom: 10 }}>
+                            <FieldLabel>{slotFieldLabel(slot.key)}</FieldLabel>
+                            <AutoGrowTextarea
+                              value={slots[slot.key] ?? slot.defaultText}
+                              onChange={handleSlotChange(slot.key)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : null
+                  )}
+                  {groupedSections.every((s) => s.textItems.length === 0) && (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: MUTED,
+                        textAlign: "center",
+                        marginTop: 32,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      No editable text found.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  {groupedSections.map((section, idx) =>
+                    section.imageItems.length > 0 ? (
+                      <div key={section.name}>
+                        <SectionLabel name={section.name} isFirst={idx === 0} />
+                        {section.imageItems.map(({ slot, assetName, asset }) => (
+                          <div key={slot.key} style={{ marginBottom: 10 }}>
+                            <FieldLabel>{slotFieldLabel(slot.key)}</FieldLabel>
+                            <ImageSlotCard
+                              slot={slot}
+                              asset={asset}
+                              onUpload={handleImageUpload(slot, assetName)}
+                              onClear={handleImageClear(assetName)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : null
+                  )}
+                  {groupedSections.every((s) => s.imageItems.length === 0) && (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: MUTED,
+                        textAlign: "center",
+                        marginTop: 32,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      No image slots found.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Sidebar footer: AI edit */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "12px 16px",
+                borderTop: `1px solid ${HAIR}`,
+              }}
+            >
+              <button
+                onClick={() => setAiEditOpen(true)}
+                style={{
+                  width: "100%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 7,
+                  padding: "10px 0",
+                  background: `linear-gradient(135deg, #6366f1, ${ACCENT})`,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 9,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: FONT_BODY,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 16px rgba(73,79,223,0.3)",
+                  transition: "opacity 0.15s, transform 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "0.9";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <Sparkles size={14} />
+                Edit with AI
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* ── AI Edit fullscreen overlay ──────────────────────────────────────── */}
+      {aiEditOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(24px) saturate(0.7)",
+            background: "rgba(15,17,21,0.6)",
+            padding: "24px",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !aiLoading) {
+              setAiEditOpen(false);
+              setAiError("");
+            }
+          }}
+        >
+          <div
+            style={{
+              width: "min(660px, 100%)",
+              background: "#fff",
+              borderRadius: 20,
+              padding: "32px",
+              boxShadow:
+                "0 40px 120px rgba(0,0,0,0.25), 0 8px 32px rgba(0,0,0,0.1)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 20,
+            }}
+          >
+            {/* Header */}
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 6,
+                }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 9,
+                    background: `linear-gradient(135deg, #6366f1, ${ACCENT})`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Sparkles size={15} color="#fff" />
+                </div>
+                <h2
+                  style={{
+                    fontSize: 20,
+                    fontFamily: FONT_DISPLAY,
+                    fontWeight: 700,
+                    color: INK,
+                    letterSpacing: "-0.025em",
+                    margin: 0,
+                  }}
+                >
+                  Edit with AI
+                </h2>
+              </div>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: MUTED,
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                Describe the changes you'd like to make. The AI will update
+                your website content accordingly.
+              </p>
+            </div>
+
+            {/* Textarea */}
+            <div style={{ position: "relative" }}>
+              <textarea
+                autoFocus
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submitAiEdit();
+                  }
+                }}
+                placeholder={`e.g. "Change the hero title to 'Transform your business', make the CTA button say 'Start free trial'"`}
+                rows={5}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: SOFT,
+                  border: `1.5px solid ${HAIR}`,
+                  borderRadius: 12,
+                  padding: "14px 50px 14px 14px",
+                  fontSize: 14,
+                  color: INK,
+                  fontFamily: FONT_BODY,
+                  outline: "none",
+                  resize: "none",
+                  lineHeight: 1.6,
+                  transition: "border-color 0.15s",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = ACCENT;
+                  e.target.style.background = "#fff";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = HAIR;
+                  e.target.style.background = SOFT;
+                }}
+              />
+              {/* Send button inside textarea */}
+              <button
+                onClick={submitAiEdit}
+                disabled={!aiPrompt.trim() || aiLoading}
+                title="Send (Enter)"
+                style={{
+                  position: "absolute",
+                  bottom: 12,
+                  right: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "none",
+                  background:
+                    !aiPrompt.trim() || aiLoading
+                      ? HAIR
+                      : `linear-gradient(135deg, #6366f1, ${ACCENT})`,
+                  color:
+                    !aiPrompt.trim() || aiLoading ? MUTED : "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor:
+                    !aiPrompt.trim() || aiLoading
+                      ? "not-allowed"
+                      : "pointer",
+                  transition: "all 0.15s",
+                  boxShadow:
+                    !aiPrompt.trim() || aiLoading
+                      ? "none"
+                      : "0 4px 12px rgba(73,79,223,0.35)",
+                }}
+              >
+                {aiLoading ? (
+                  <Loader2
+                    size={14}
+                    style={{ animation: "spin 1s linear infinite" }}
+                  />
+                ) : (
+                  <Send size={13} />
+                )}
+              </button>
+            </div>
+
+            {/* Hint */}
+            <p
+              style={{
+                fontSize: 12,
+                color: "#a3a9b3",
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Press{" "}
+              <kbd
+                style={{
+                  background: SOFT,
+                  border: `1px solid ${HAIR}`,
+                  borderRadius: 4,
+                  padding: "1px 5px",
+                  fontSize: 11,
+                  fontFamily: FONT_BODY,
+                }}
+              >
+                Enter
+              </kbd>{" "}
+              to send,{" "}
+              <kbd
+                style={{
+                  background: SOFT,
+                  border: `1px solid ${HAIR}`,
+                  borderRadius: 4,
+                  padding: "1px 5px",
+                  fontSize: 11,
+                  fontFamily: FONT_BODY,
+                }}
+              >
+                Shift+Enter
+              </kbd>{" "}
+              for new line.
+            </p>
+
+            {/* Error */}
+            {aiError && (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#b91c1c",
+                  background: "rgba(254,226,226,0.6)",
+                  border: "1px solid rgba(220,38,38,0.2)",
+                  borderRadius: 9,
+                  padding: "10px 14px",
+                }}
+              >
+                {aiError}
+              </div>
+            )}
+
+            {/* Cancel */}
+            <button
+              onClick={() => {
+                if (aiLoading) return;
+                setAiEditOpen(false);
+                setAiError("");
+              }}
+              disabled={aiLoading}
+              style={{
+                alignSelf: "flex-start",
+                background: "none",
+                border: "none",
+                fontSize: 13,
+                color: MUTED,
+                cursor: aiLoading ? "not-allowed" : "pointer",
+                fontFamily: FONT_BODY,
+                padding: "4px 0",
+                textDecoration: "underline",
+                textDecorationColor: "transparent",
+                transition: "color 0.15s, text-decoration-color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = INK;
+                e.currentTarget.style.textDecorationColor = INK;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = MUTED;
+                e.currentTarget.style.textDecorationColor = "transparent";
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Deploy result toast ────────────────────────────────────────────── */}
       {(deployResult || deployError) && (
         <div
           style={{
             position: "fixed",
             bottom: 24,
             right: 24,
-            maxWidth: 380,
+            maxWidth: 360,
             background: "#fff",
             border: `1px solid ${HAIR}`,
             borderRadius: 14,
@@ -1517,9 +1970,8 @@ export default function Editor() {
               padding: 4,
               display: "inline-flex",
             }}
-            aria-label="Close"
           >
-            <X size={14} />
+            <X size={13} />
           </button>
           {deployResult ? (
             <>
@@ -1534,8 +1986,8 @@ export default function Editor() {
                   gap: 6,
                 }}
               >
-                <Check size={14} color={ACCENT} />
-                Deployed to Netlify
+                <Check size={13} color={ACCENT} />
+                Published to Netlify
               </div>
               <a
                 href={deployResult.url}
@@ -1544,15 +1996,15 @@ export default function Editor() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
-                  fontSize: 13,
+                  gap: 5,
+                  fontSize: 12,
                   color: ACCENT,
                   textDecoration: "none",
                   wordBreak: "break-all",
                 }}
               >
                 {deployResult.url}
-                <ExternalLink size={12} />
+                <ExternalLink size={11} />
               </a>
             </>
           ) : (
@@ -1565,7 +2017,7 @@ export default function Editor() {
                   marginBottom: 4,
                 }}
               >
-                Deploy failed
+                Publish failed
               </div>
               <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
                 {deployError}

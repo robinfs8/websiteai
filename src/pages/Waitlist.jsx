@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Droplets, CheckCircle2, LogOut, ArrowLeft } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Droplets, ArrowLeft } from "lucide-react";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { auth, db, googleProvider } from "../firebase";
+import { auth, googleProvider } from "../firebase";
 
 const STYLES = `
   @keyframes orbFloatW {
@@ -40,17 +39,21 @@ function GoogleIcon({ size = 20 }) {
 }
 
 export default function Waitlist() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from ?? "/generate";
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
   const [btnHovered, setBtnHovered] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
+      if (u) navigate(from, { replace: true });
     });
     return unsub;
   }, []);
@@ -59,19 +62,8 @@ export default function Waitlist() {
     setError("");
     setSubmitting(true);
     try {
-      const { user: u } = await signInWithPopup(auth, googleProvider);
-      await setDoc(
-        doc(db, "waitlist", u.uid),
-        {
-          uid: u.uid,
-          email: u.email,
-          name: u.displayName,
-          photoURL: u.photoURL,
-          joinedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-      setSaved(true);
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged above handles the redirect.
     } catch (e) {
       if (e?.code !== "auth/popup-closed-by-user") {
         setError(e?.message || "Sign-in failed. Please try again.");
@@ -83,7 +75,6 @@ export default function Waitlist() {
 
   const handleSignOut = async () => {
     await signOut(auth);
-    setSaved(false);
   };
 
   return (
@@ -201,25 +192,6 @@ export default function Waitlist() {
             animation: "fadeUpW 0.6s cubic-bezier(.22,1,.36,1) both",
           }}
         >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 14px",
-              borderRadius: 9999,
-              background: "rgba(73,79,223,0.10)",
-              color: "#494fdf",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              marginBottom: 20,
-            }}
-          >
-            Early access
-          </div>
-
           <h1
             style={{
               fontFamily: "'Syne', sans-serif",
@@ -230,7 +202,7 @@ export default function Waitlist() {
               marginBottom: 14,
             }}
           >
-            Join the waitlist.
+            Sign In.
           </h1>
 
           <p
@@ -241,11 +213,10 @@ export default function Waitlist() {
               marginBottom: 32,
             }}
           >
-            Sign in with Google to reserve your spot. We'll email you as soon as
-            your access is ready. You will have direct access when we launch.
+            Sign in with Google to access OceanAI. New accounts get free credits to get started.
           </p>
 
-          {loading ? (
+          {loading || user ? (
             <div
               style={{
                 height: 56,
@@ -253,86 +224,6 @@ export default function Waitlist() {
                 background: "rgba(0,0,0,0.04)",
               }}
             />
-          ) : user ? (
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: 16,
-                  borderRadius: 20,
-                  background: "rgba(73,79,223,0.06)",
-                  border: "1px solid rgba(73,79,223,0.15)",
-                  marginBottom: 20,
-                }}
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt=""
-                    width={48}
-                    height={48}
-                    style={{ borderRadius: "50%" }}
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: "50%",
-                      background: "#494fdf",
-                    }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 15,
-                      color: "#191c1f",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {user.displayName || "Signed in"}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#8d969e",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {user.email}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "14px 16px",
-                  borderRadius: 16,
-                  background: "#191c1f",
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  marginBottom: 12,
-                }}
-              >
-                <CheckCircle2 size={20} color="#8affc1" />
-                {saved
-                  ? "You're on the waitlist. We'll be in touch."
-                  : "You're in. We'll email you soon."}
-              </div>
-            </div>
           ) : (
             <>
               <button

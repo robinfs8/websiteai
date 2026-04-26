@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // users collection — managed exclusively by the backend (Firebase Admin SDK).
+    // The Admin SDK bypasses these rules, so no client can read or write credits.
+    match /users/{uid} {
+      allow read, write: if false;
+    }
+
+    // waitlist — users can only create/update their own entry.
+    match /waitlist/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Deny everything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
