@@ -600,26 +600,6 @@ Example: <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700
 
 Never invent or use a font not on this list.`;
 
-// ─── LANDING PATTERNS ──────────────────────────────────────────────────────────
-
-export const LANDING_PATTERNS = {
-  tech: `Hero (bold value prop + demo CTA if USER PROVIDES SUCH INFO) → Social proof bar (logos) → Features grid → How it works (steps) → Pricing → Testimonials → Final CTA strip → Footer`,
-  agency: `Hero (statement + reel/portfolio link) → Selected work grid → Services list → About/Team → Testimonials → Contact CTA → Footer`,
-  handwerk: `Hero (service + local area + call CTA) → Services grid → Why Us (3 trust points) → Testimonials → Service area map → Contact CTA → Footer`,
-  health: `Hero (patient benefit + booking CTA if USER PROVIDES SUCH INFO) → Services cards → Team profiles → Testimonials → FAQ → Booking CTA → Footer`,
-  gastro: `Hero (atmosphere + reservation CTA) → Menu highlights → About/Story → Gallery → Hours & Location → Reservation CTA → Footer`,
-  sport: `Hero (motivation + trial CTA if USER PROVIDES SUCH INFO) → Services/Classes → Benefits strip → Pricing → Trainers → Schedule → CTA → Footer`,
-  brand: `Hero (personal statement) → About → Services/Offerings → Portfolio/Work → Testimonials → Contact → Footer`,
-  industry: `Hero (capability + contact CTA) → Products/Services → Industries served → Capabilities → Certifications/Trust → Contact → Footer`,
-  realestate: `Hero (search bar or featured property + CTA) → Featured listings grid → Services → Team → Testimonials → Contact → Footer`,
-  education: `Hero (outcome promise + enrol CTA if USER PROVIDES SUCH INFO) → Courses/Programmes → Benefits → Instructors → Testimonials → FAQ → Enrol CTA → Footer`,
-  event: `Hero (event name + date + tickets CTA) → About the event → Line-up/Programme → Tickets/Pricing → Venue/Location → Sponsors → FAQ → Footer`,
-  nonprofit: `Hero (mission statement + donate CTA if USER PROVIDES SUCH INFO) → Impact stats → How to help (donate/volunteer/partner) → News/Stories → Partners → Donate CTA → Footer`,
-  corporate: `Hero (positioning + contact CTA) → Key services → Key figures/stats → Leadership → Partners/Clients → Contact → Footer`,
-  portfolio: `Hero (name + role + work CTA) → Selected projects grid → Skills/About → Testimonials → Contact → Footer`,
-  other: `Hero → Services/Features → About → Testimonials → CTA → Footer`,
-};
-
 // ─── UX CORE RULES ─────────────────────────────────────────────────────────────
 
 export const UX_CORE_RULES = `UX & VISUAL QUALITY RULES (apply to every section):

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import express from "express";
 import cors from "cors";
 import { runPipeline } from "./lib/pipeline.js";
@@ -8,9 +9,21 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
+const GENERATE_TIMEOUT_MS = 120_000;
+
+app.use((req, _res, next) => {
+  req.id = req.get("x-request-id") || randomUUID();
+  next();
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.post("/generate", async (req, res) => {
+  const rid = req.id;
+  const log = (...args) => console.log(`[${rid}]`, ...args);
+  const logErr = (...args) => console.error(`[${rid}]`, ...args);
+  res.setHeader("x-request-id", rid);
+
   const { prompt, brief } = req.body ?? {};
 
   let userPrompt;
@@ -23,27 +36,53 @@ app.post("/generate", async (req, res) => {
     } else {
       return res.status(400).json({
         error: 'provide either { brief: {...} } or { prompt: "..." }',
+        requestId: rid,
       });
     }
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message, requestId: rid });
   }
 
   // Log the userPrompt as a SINGLE log entry. Railway's log viewer splits on
   // \n and re-orders lines that share a millisecond timestamp, which makes a
   // multi-line console.log appear scrambled. JSON-stringifying escapes the
   // newlines so the entire prompt is one line and cannot be reordered.
-  console.log("Generated userPrompt:", JSON.stringify(userPrompt));
+  log("generate start; userPrompt:", JSON.stringify(userPrompt));
+
+  let clientGone = false;
+  req.on("close", () => {
+    if (!res.writableEnded) {
+      clientGone = true;
+      log("client disconnected before response");
+    }
+  });
+
+  let timeoutHandle;
+  const timeoutPromise = new Promise((_resolve, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(Object.assign(new Error("generation timed out"), { code: "ETIMEOUT" }));
+    }, GENERATE_TIMEOUT_MS);
+  });
 
   try {
-    const sitePackage = await runPipeline(userPrompt);
+    const sitePackage = await Promise.race([
+      runPipeline(userPrompt),
+      timeoutPromise,
+    ]);
+    clearTimeout(timeoutHandle);
+    if (clientGone) return;
+    log("generate ok");
     res.json(sitePackage);
   } catch (err) {
-    console.error("[generate] failed:", err);
-    res.status(500).json({
+    clearTimeout(timeoutHandle);
+    logErr("generate failed:", err);
+    if (clientGone || res.writableEnded) return;
+    const status = err.code === "ETIMEOUT" ? 504 : 500;
+    res.status(status).json({
       error: err.message ?? "pipeline failed",
-      stage: err.stage ?? "unknown",
+      stage: err.stage ?? (err.code === "ETIMEOUT" ? "timeout" : "unknown"),
       details: err.details ?? null,
+      requestId: rid,
     });
   }
 });

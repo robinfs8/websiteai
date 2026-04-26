@@ -51,7 +51,6 @@ import {
   PROMPT_DB,
   SECTION_PROMPTS,
   GLOBAL_PROMPT,
-  LANDING_PATTERNS,
   UX_CORE_RULES,
   HTML_BEST_PRACTICES,
   ICON_GUIDELINES,
@@ -223,17 +222,10 @@ function designBlock(b) {
 // Source: PROMPT_DB.uiux  (all labels/templates)
 //         FALLBACK_PALETTES, LANDING_PATTERNS, deriveFontPair  (data)
 //         SECTION_DESIGN_PATTERNS, ICON_GUIDELINES, UX_CORE_RULES, HTML_BEST_PRACTICES
-function uiuxBlock(b) {
+function uiuxBlock() {
   //const d = b.design ?? {};
-  const industry = b.basics?.industry ?? "other";
   const u = PROMPT_DB.uiux;
   const lines = [];
-
-  lines.push(
-    fill(u.pattern, {
-      pattern: LANDING_PATTERNS[industry] ?? LANDING_PATTERNS.other,
-    })
-  );
 
   if (u.typography?.header) lines.push("", u.typography.header);
   lines.push("", APPROVED_FONTS);
