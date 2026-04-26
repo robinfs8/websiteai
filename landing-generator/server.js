@@ -87,6 +87,76 @@ app.post("/generate", async (req, res) => {
   }
 });
 
+app.post(
+  "/deploy",
+  express.raw({ type: "application/zip", limit: "50mb" }),
+  async (req, res) => {
+    const rid = req.id;
+    const log = (...args) => console.log(`[${rid}]`, ...args);
+    const logErr = (...args) => console.error(`[${rid}]`, ...args);
+    res.setHeader("x-request-id", rid);
+
+    const token = process.env.NETLIFY_TOKEN;
+    if (!token) {
+      return res
+        .status(500)
+        .json({ error: "NETLIFY_TOKEN not configured", requestId: rid });
+    }
+    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "send a ZIP body with Content-Type: application/zip", requestId: rid });
+    }
+
+    try {
+      log("deploy: creating site");
+      const siteRes = await fetch("https://api.netlify.com/api/v1/sites", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+      if (!siteRes.ok) {
+        const text = await siteRes.text();
+        throw new Error(`site create failed (${siteRes.status}): ${text}`);
+      }
+      const site = await siteRes.json();
+
+      log("deploy: uploading zip to site", site.site_id);
+      const deployRes = await fetch(
+        `https://api.netlify.com/api/v1/sites/${site.site_id}/deploys`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/zip",
+          },
+          body: req.body,
+        }
+      );
+      if (!deployRes.ok) {
+        const text = await deployRes.text();
+        throw new Error(`deploy failed (${deployRes.status}): ${text}`);
+      }
+      const deploy = await deployRes.json();
+
+      log("deploy ok", site.ssl_url || site.url);
+      res.json({
+        url: site.ssl_url || site.url,
+        adminUrl: site.admin_url,
+        siteId: site.site_id,
+        deployId: deploy.id,
+        state: deploy.state,
+      });
+    } catch (err) {
+      logErr("deploy failed:", err);
+      res.status(500).json({ error: err.message, requestId: rid });
+    }
+  }
+);
+
 app.post("/prompt-preview", (req, res) => {
   try {
     const { brief } = req.body ?? {};

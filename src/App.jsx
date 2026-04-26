@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  Sparkles,
   Droplets,
-  Globe,
-  Zap,
-  Shield,
+  Code2,
+  Pencil,
+  Rocket,
+  Clock,
+  Cpu,
+  Download,
 } from "lucide-react";
 import Navbar from "./Navbar";
 
@@ -33,10 +35,85 @@ const GLOBAL_STYLES = `
     gap: 24px;
   }
   .steps-mobile { display: none; }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
   @media (max-width: 767px) {
     .steps-desktop { display: none !important; }
     .steps-mobile { display: block; }
+
+    /* HOW IT WORKS — full-width snap carousel, dots below */
+    .steps-mobile .carousel-track {
+      margin: 0 -10px !important;
+      padding: 8px 10px 18px !important;
+      gap: 14px !important;
+      scroll-padding-left: 10px;
+    }
+    .steps-mobile .carousel-track > div {
+      flex: 0 0 calc(100vw - 20px) !important;
+      padding: 0 !important;
+      justify-content: stretch !important;
+      scroll-snap-align: center !important;
+    }
+    .steps-mobile .feature-card {
+      width: 100% !important;
+      max-width: none !important;
+      padding: 36px 10px !important;
+      border-radius: 28px !important;
+    }
+    /* dark step variant (no .feature-card class) */
+    .steps-mobile .carousel-track > div > div {
+      width: 100% !important;
+      max-width: none !important;
+      padding: 36px 10px !important;
+      border-radius: 28px !important;
+    }
+
+    /* WHY OCEANAI — peek carousel, next card visible at right edge */
+    .features-grid {
+      display: flex !important;
+      gap: 12px !important;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      margin: 0 -10px !important;
+      padding: 8px 10px 14px !important;
+      scroll-padding-left: 10px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .features-grid::-webkit-scrollbar { display: none; }
+    .feature-slide {
+      flex: 0 0 78% !important;
+      min-width: 78% !important;
+      max-width: 78% !important;
+      padding: 0 !important;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      box-sizing: border-box;
+    }
+    .feature-slide > div {
+      height: 100%;
+      padding: 28px 10px !important;
+      border-radius: 22px !important;
+    }
+
+    .step-dark-glow {
+      top: auto !important;
+      bottom: -92px !important;
+      right: -26px !important;
+      width: 160px !important;
+      height: 160px !important;
+      opacity: 0.42 !important;
+      filter: blur(48px) !important;
+    }
+    .page-section {
+      padding-left: 10px !important;
+      padding-right: 10px !important;
+    }
     .hero-section {
+      width: calc(100% - 20px) !important;
       align-items: flex-start !important;
       text-align: left !important;
     }
@@ -46,32 +123,68 @@ const GLOBAL_STYLES = `
       width: 100%;
     }
   }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
 `;
 
 /**
  * OCEAN AI – App.jsx
- * Fonts: Syne (headings/display) + Manrope (body)
+ * Fonts: Plus Jakarta Sans (headings) + Manrope (body)
  * Theme: Liquid Glass & Sea Minimalism
  */
 
 const STEPS = [
   {
-    icon: Globe,
-    title: "Answer",
-    body: "Answer a curated flow of questions about your brand's DNA, goals, and aesthetic preferences.",
+    number: 1,
+    title: "Describe",
+    body: "Tell us about your business, style, and goals. Our guided flow captures everything the AI needs — no design skills required.",
     dark: false,
   },
   {
-    icon: Zap,
+    number: 2,
     title: "Generate",
-    body: "Our AI synthesizes your data into a unique layout, matching custom code with your style.",
+    body: "Our AI builds a complete, unique website with real, clean code. Layouts, copy, colors — all tailored to you in under a minute.",
     dark: false,
   },
   {
-    icon: Shield,
+    number: 3,
     title: "Launch",
-    body: "Deploy your high-performance, unique and custom site in under 60 seconds with zero friction.",
+    body: "Edit text and visuals, then export production-ready code or deploy instantly. Your site, your way — zero friction.",
     dark: true,
+  },
+];
+
+const FEATURES = [
+  {
+    icon: Cpu,
+    title: "AI-Powered",
+    body: "Built with the latest generative AI. Every site is unique — no templates, no cookie-cutter layouts.",
+  },
+  {
+    icon: Code2,
+    title: "Real Code",
+    body: "Export clean HTML, CSS & JS. Fully yours to own, customize, and host anywhere you want.",
+  },
+  {
+    icon: Pencil,
+    title: "Edit Everything",
+    body: "Change text, swap images, tweak visuals — all from a simple editor. Ask AI for copy suggestions too.",
+  },
+  {
+    icon: Rocket,
+    title: "Deploy Instantly",
+    body: "Download your site as a ready-to-deploy package. Upload to any hosting provider in seconds.",
+  },
+  {
+    icon: Clock,
+    title: "Minutes, Not Months",
+    body: "Go from idea to a live website faster than ever. What used to take weeks now takes minutes.",
+  },
+  {
+    icon: Download,
+    title: "Developer Ready",
+    body: "Structured, semantic code your developers can extend. No vendor lock-in, no proprietary formats.",
   },
 ];
 
@@ -126,7 +239,7 @@ function BgOrbs() {
 }
 
 /* ── Step card ─────────────────────────────────────────── */
-function StepCard({ icon: IconComponent, title, body, dark }) {
+function StepCard({ number, icon: IconComponent, title, body, dark }) {
   const [hovered, setHovered] = useState(false);
 
   if (dark) {
@@ -158,6 +271,7 @@ function StepCard({ icon: IconComponent, title, body, dark }) {
       >
         {/* glow blob */}
         <div
+          className="step-dark-glow"
           style={{
             position: "absolute",
             top: -40,
@@ -185,9 +299,14 @@ function StepCard({ icon: IconComponent, title, body, dark }) {
             marginBottom: 32,
             position: "relative",
             zIndex: 1,
+            fontSize: 28,
+            fontWeight: 700,
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
           }}
         >
-          <IconComponent size={28} />
+          {number !== undefined
+            ? number
+            : IconComponent && <IconComponent size={28} />}
         </div>
         <h3
           style={{
@@ -221,6 +340,7 @@ function StepCard({ icon: IconComponent, title, body, dark }) {
 
   return (
     <div
+      className="feature-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -260,14 +380,19 @@ function StepCard({ icon: IconComponent, title, body, dark }) {
           marginBottom: 32,
           transition: "background 0.3s ease, color 0.3s ease",
           boxShadow: hovered ? "0 8px 24px rgba(73,79,223,0.30)" : "none",
+          fontSize: 28,
+          fontWeight: 700,
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
         }}
       >
-        <IconComponent size={28} />
+        {number !== undefined
+          ? number
+          : IconComponent && <IconComponent size={28} />}
       </div>
       <h3
         style={{
           fontSize: 30,
-          fontFamily: "'Syne', sans-serif",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
           fontWeight: 700,
           color: "#191c1f",
           marginBottom: 14,
@@ -282,6 +407,76 @@ function StepCard({ icon: IconComponent, title, body, dark }) {
           lineHeight: 1.65,
           fontSize: 15,
           fontFamily: "'Manrope', sans-serif",
+        }}
+      >
+        {body}
+      </p>
+    </div>
+  );
+}
+
+/* ── Feature card ─────────────────────────────────────── */
+function FeatureCard({ icon: IconComponent, title, body }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: "32px 28px",
+        background: hovered ? "#fff" : "#fafafa",
+        border: hovered
+          ? "1px solid rgba(73,79,223,0.18)"
+          : "1px solid #f0f0f4",
+        borderRadius: 24,
+        transition:
+          "background 0.25s, border-color 0.25s, box-shadow 0.3s, transform 0.3s",
+        boxShadow: hovered
+          ? "0 16px 48px rgba(73,79,223,0.08), 0 2px 8px rgba(0,0,0,0.04)"
+          : "none",
+        transform: hovered ? "translateY(-3px)" : "translateY(0)",
+        cursor: "default",
+      }}
+    >
+      <div
+        className="feature-card-icon"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          background: hovered ? "#494fdf" : "#f0f0f4",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: hovered ? "#fff" : "#494fdf",
+          marginBottom: 20,
+          transition: "background 0.25s, color 0.25s, box-shadow 0.25s",
+          boxShadow: hovered ? "0 6px 16px rgba(73,79,223,0.25)" : "none",
+        }}
+      >
+        <IconComponent size={22} />
+      </div>
+      <h4
+        className="feature-card-title"
+        style={{
+          fontSize: 18,
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontWeight: 700,
+          color: "#191c1f",
+          marginBottom: 8,
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {title}
+      </h4>
+      <p
+        className="feature-card-body"
+        style={{
+          color: "#505a63",
+          lineHeight: 1.6,
+          fontSize: 14,
+          fontFamily: "'Manrope', sans-serif",
+          margin: 0,
         }}
       >
         {body}
@@ -320,8 +515,43 @@ function StepsSection() {
   return (
     <section
       id="how"
+      className="page-section"
       style={{ maxWidth: 1280, margin: "0 auto", padding: "128px 24px 0" }}
     >
+      {/* Section label */}
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: 56,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "#494fdf",
+            fontFamily: "'Manrope', sans-serif",
+          }}
+        >
+          How it works
+        </span>
+        <h2
+          style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 800,
+            fontSize: "clamp(28px, 4vw, 48px)",
+            color: "#191c1f",
+            letterSpacing: "-0.03em",
+            marginTop: 12,
+            lineHeight: 1.1,
+          }}
+        >
+          Three steps to your website
+        </h2>
+      </div>
+
       {/* Desktop grid */}
       <div className="steps-desktop">
         {STEPS.map((s) => (
@@ -392,12 +622,76 @@ function StepsSection() {
   );
 }
 
+/* ── Features Section ─────────────────────────────────── */
+function FeaturesSection() {
+  return (
+    <section
+      className="page-section"
+      style={{ maxWidth: 1280, margin: "0 auto", padding: "128px 24px 0" }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: 56,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "#494fdf",
+            fontFamily: "'Manrope', sans-serif",
+          }}
+        >
+          Why OceanAI
+        </span>
+        <h2
+          style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 800,
+            fontSize: "clamp(28px, 4vw, 48px)",
+            color: "#191c1f",
+            letterSpacing: "-0.03em",
+            marginTop: 12,
+            lineHeight: 1.1,
+          }}
+        >
+          Everything you need to ship
+        </h2>
+        <p
+          style={{
+            color: "#505a63",
+            fontSize: "clamp(15px, 1.8vw, 18px)",
+            maxWidth: 560,
+            margin: "18px auto 0",
+            lineHeight: 1.6,
+            fontFamily: "'Manrope', sans-serif",
+          }}
+        >
+          No coding. No&nbsp;designers. No&nbsp;waiting. Just describe your
+          vision and get a professional website powered by the newest AI models.
+        </p>
+      </div>
+
+      <div className="features-grid">
+        {FEATURES.map((f) => (
+          <div key={f.title} className="feature-slide">
+            <FeatureCard {...f} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── Main App ─────────────────────────────────────────── */
 export default function App() {
   const [btnHovered, setBtnHovered] = useState(false);
   const [ctaBtnHovered, setCtaBtnHovered] = useState(false);
   const navigate = useNavigate();
-  const goToWaitlist = () => navigate("/waitlist");
+  const goToGenerate = () => navigate("/generate");
 
   return (
     <div
@@ -414,13 +708,13 @@ export default function App() {
     >
       <BgOrbs />
 
-      <Navbar ctaText="Get Started" onCtaClick={goToWaitlist} />
+      <Navbar ctaText="Start Building" onCtaClick={goToGenerate} />
 
       {/* ── HERO ───────────────────────────────────────── */}
       <main
         style={{
           flexGrow: 1,
-          paddingTop: 180,
+          paddingTop: 110,
           paddingBottom: 80,
           position: "relative",
           zIndex: 10,
@@ -430,66 +724,76 @@ export default function App() {
           className="hero-section"
           style={{
             maxWidth: 1280,
+            width: "calc(100% - 48px)",
             margin: "0 auto",
-            padding: "0 24px",
+            padding: "80px 24px 72px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
+            background: "#191c1f",
+            borderRadius: 48,
+            position: "relative",
+            overflow: "hidden",
+            boxShadow: "0 40px 100px rgba(0,0,0,0.16)",
           }}
         >
-          {/* Badge */}
           <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 20px",
-              borderRadius: 9999,
-              background: "#f4f4f4",
-              color: "#494fdf",
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              marginBottom: 40,
-              border: "1px solid #e5e7eb",
-              fontFamily: "'Manrope', sans-serif",
-              animation: "badgePop 0.6s cubic-bezier(.34,1.56,.64,1) both",
+              position: "absolute",
+              bottom: -120,
+              left: -120,
+              width: 420,
+              height: 420,
+              background: "rgba(73,79,223,0.34)",
+              borderRadius: "50%",
+              filter: "blur(110px)",
+              animation: "orbFloat 10s ease-in-out infinite",
+              pointerEvents: "none",
             }}
-          >
-            <Sparkles size={13} />
-            COMING SOON
-          </div>
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: -120,
+              right: -120,
+              width: 420,
+              height: 420,
+              background: "rgba(73,79,223,0.16)",
+              borderRadius: "50%",
+              filter: "blur(110px)",
+              animation: "orbFloat 14s ease-in-out infinite reverse",
+              pointerEvents: "none",
+            }}
+          />
 
           {/* Headline */}
           <h1
             className="hero-headline"
             style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontWeight: 800,
-              fontSize: "clamp(38px, 6vw, 80px)",
-              lineHeight: 1,
-              letterSpacing: "-0.05em",
-              color: "#191c1f",
+              fontFamily: "'Syne', 'Plus Jakarta Sans', sans-serif",
+              fontWeight: 700,
+              fontSize: "clamp(40px, 6.5vw, 86px)",
+              lineHeight: 0.98,
+              letterSpacing: "-0.045em",
+              color: "#fff",
               marginBottom: 36,
               animation: "fadeUp 0.7s 0.1s cubic-bezier(.22,1,.36,1) both",
+              position: "relative",
+              zIndex: 1,
             }}
           >
-            Build unique <br />
+            Build your website <br />
             <span
               style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(38px, 6vw, 80px)",
-                lineHeight: 1,
-                letterSpacing: "-0.05em",
-                color: "#191c1f",
-                marginBottom: 36,
-                animation: "fadeUp 0.7s 0.1s cubic-bezier(.22,1,.36,1) both",
+                fontFamily: "'Syne', 'Plus Jakarta Sans', sans-serif",
+                background: "linear-gradient(135deg, #d7daff 0%, #8e95ff 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
-              Websites
+              with AI
             </span>
           </h1>
 
@@ -498,18 +802,20 @@ export default function App() {
             className="hero-subtitle"
             style={{
               fontSize: "clamp(16px, 2.2vw, 22px)",
-              color: "#505a63",
-              maxWidth: 620,
+              color: "#c3c9d1",
+              maxWidth: 640,
               marginBottom: 60,
               lineHeight: 1.65,
               fontFamily: "'Manrope', sans-serif",
               fontWeight: 400,
               animation: "fadeUp 0.7s 0.22s cubic-bezier(.22,1,.36,1) both",
+              position: "relative",
+              zIndex: 1,
             }}
           >
-            We've turned years of design expertise into a fluid AI architect.
-            Simply answer 5 questions and watch as we pour professional-grade
-            code into a custom site.
+            Describe your business, and our AI generates a complete, unique
+            website with real code — ready to deploy in minutes, not months. No
+            coding required.
           </p>
 
           {/* Liquid glass hero button */}
@@ -533,7 +839,7 @@ export default function App() {
               }}
             />
             <button
-              onClick={goToWaitlist}
+              onClick={goToGenerate}
               onMouseEnter={() => setBtnHovered(true)}
               onMouseLeave={() => setBtnHovered(false)}
               style={{
@@ -543,11 +849,11 @@ export default function App() {
                 gap: 20,
                 padding: "18px 36px",
                 background: btnHovered
-                  ? "rgba(255,255,255,0.60)"
-                  : "rgba(255,255,255,0.40)",
+                  ? "rgba(255,255,255,0.92)"
+                  : "rgba(255,255,255,0.82)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
-                border: "1.5px solid rgba(255,255,255,0.85)",
+                border: "1.5px solid rgba(255,255,255,0.92)",
                 borderRadius: 9999,
                 boxShadow: btnHovered
                   ? "0 24px 64px rgba(73,79,223,0.28), 0 8px 20px rgba(0,0,0,0.08)"
@@ -566,7 +872,7 @@ export default function App() {
                   letterSpacing: "-0.01em",
                 }}
               >
-                Join the waitlist
+                Generate Your Website
               </span>
               <div
                 style={{
@@ -592,8 +898,12 @@ export default function App() {
         {/* ── STEPS ──────────────────────────────────────── */}
         <StepsSection />
 
+        {/* ── FEATURES ───────────────────────────────────── */}
+        <FeaturesSection />
+
         {/* ── FINAL CTA ─────────────────────────────────── */}
         <section
+          className="page-section"
           style={{
             maxWidth: 1280,
             margin: "0 auto",
@@ -645,23 +955,38 @@ export default function App() {
 
             <h2
               style={{
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                fontWeight: 800,
-                fontSize: "clamp(36px, 6vw, 80px)",
                 color: "#fff",
-                lineHeight: 1.05,
+                fontFamily: "'Syne', 'Plus Jakarta Sans', sans-serif",
+                fontWeight: 700,
+                fontSize: "clamp(40px, 6.5vw, 86px)",
+                lineHeight: 0.98,
+                letterSpacing: "-0.045em",
+                marginBottom: 24,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              Ready to build?
+            </h2>
+
+            <p
+              style={{
+                color: "#8d969e",
+                fontSize: "clamp(15px, 1.8vw, 19px)",
+                maxWidth: 520,
+                lineHeight: 1.6,
                 marginBottom: 40,
                 position: "relative",
                 zIndex: 1,
-                letterSpacing: "-0.04em",
+                fontFamily: "'Manrope', sans-serif",
               }}
             >
-              Start your design <br />
-              evolution.
-            </h2>
+              Your next website is one conversation away. Describe it, generate
+              it, launch it — all in minutes.
+            </p>
 
             <button
-              onClick={goToWaitlist}
+              onClick={goToGenerate}
               onMouseEnter={() => setCtaBtnHovered(true)}
               onMouseLeave={() => setCtaBtnHovered(false)}
               style={{
@@ -685,7 +1010,7 @@ export default function App() {
                 transition: "all 0.35s cubic-bezier(.22,1,.36,1)",
               }}
             >
-              Claim Your Access
+              Start Building — Free
             </button>
           </div>
         </section>

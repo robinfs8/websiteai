@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Droplets } from "lucide-react";
 
-export default function Navbar({ ctaText = "Get Started", onCtaClick, showCta = true }) {
+export default function Navbar({
+  ctaText = "Get Started",
+  onCtaClick,
+  showCta = true,
+}) {
   const [navBtnHovered, setNavBtnHovered] = useState(false);
   const navigate = useNavigate();
 
@@ -11,12 +15,12 @@ export default function Navbar({ ctaText = "Get Started", onCtaClick, showCta = 
   return (
     <header
       style={{
-        position: "sticky",
+        position: "fixed",
         top: 0,
         left: 0,
         right: 0,
         zIndex: 50,
-        padding: "20px 24px",
+        padding: "20px 14px",
       }}
     >
       <nav
@@ -58,7 +62,7 @@ export default function Navbar({ ctaText = "Get Started", onCtaClick, showCta = 
           onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
         >
           <Droplets size={24} color="#494fdf" fill="rgba(73,79,223,0.15)" />
-          OceanAI
+          UlmariAI
         </button>
 
         {/* Nav links */}

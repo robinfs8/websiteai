@@ -65,15 +65,15 @@ function extractPagesFromResponse(json) {
 
 const INDUSTRIES = [
   { value: "tech", label: "Tech" },
-  { value: "agency", label: "Agentur / Dienstleistung" },
-  { value: "handwerk", label: "Lokales Handwerk / Servicebetrieb" },
-  { value: "health", label: "Gesundheitsbereich" },
-  { value: "gastro", label: "Gastronomie" },
+  { value: "agency", label: "Agency / Services" },
+  { value: "handwerk", label: "Local Trades / Services" },
+  { value: "health", label: "Health & Wellness" },
+  { value: "gastro", label: "Food & Beverage" },
   { value: "sport", label: "Sport" },
-  { value: "brand", label: "Marke" },
-  { value: "industry", label: "Industrie / Technik" },
-  { value: "realestate", label: "Immobilien" },
-  { value: "education", label: "Bildung" },
+  { value: "brand", label: "Brand" },
+  { value: "industry", label: "Industry / Engineering" },
+  { value: "realestate", label: "Real Estate" },
+  { value: "education", label: "Education" },
   { value: "event", label: "Event / Community" },
   { value: "nonprofit", label: "Non-Profit" },
   { value: "corporate", label: "Corporate" },
@@ -95,80 +95,81 @@ const SHAPE_LANGUAGE = [
 ];
 
 const CTAS = [
-  { value: "call", label: "Anrufen" },
-  { value: "book", label: "Termin buchen" },
-  { value: "contact", label: "Kontaktformular" },
-  { value: "buy", label: "Kaufen" },
-  { value: "demo", label: "Demo buchen" },
+  { value: "call", label: "Call us", hasLink: false },
+  { value: "book", label: "Book appointment", hasLink: true },
+  { value: "contact", label: "Contact form", hasLink: false },
+  { value: "buy", label: "Buy now", hasLink: true },
+  { value: "demo", label: "Book a demo", hasLink: true },
+  { value: "other", label: "Other", hasLink: true },
 ];
 
 const SECTION_OPTIONS = [
   {
     key: "about",
-    label: "Über uns / Story",
+    label: "About / Story",
     contentField: "story",
-    placeholder: "Erzähle die Geschichte deines Unternehmens…",
+    placeholder: "Tell the story of your company…",
   },
   {
     key: "team",
     label: "Team",
     contentField: "members",
-    placeholder: "Namen & kurze Beschreibung der Teammitglieder…",
+    placeholder: "Names & short bios of team members…",
   },
   {
     key: "testimonials",
     label: "Testimonials / Reviews",
     contentField: "reviews",
-    placeholder: "Kundenbewertungen eintragen…",
+    placeholder: "Paste customer reviews here…",
   },
   {
     key: "process",
-    label: "How it works / Prozess",
+    label: "How it works / Process",
     contentField: "description",
-    placeholder: "Beschreibe den Prozess kurz…",
+    placeholder: "Briefly describe the process…",
   },
   {
     key: "portfolio",
-    label: "Portfolio / Projekte",
+    label: "Portfolio / Projects",
     contentField: "projects",
-    placeholder: "Kurze Texte zu Projekten…",
+    placeholder: "Short descriptions of projects…",
   },
   {
     key: "pricing",
-    label: "Pricing / Leistungen",
+    label: "Pricing / Services",
     contentField: "details",
-    placeholder: "Preise und was inklusive ist…",
+    placeholder: "Prices and what's included…",
   },
   {
     key: "comparison",
-    label: "Vergleich",
+    label: "Comparison",
     contentField: "data",
-    placeholder: "Vergleichsdaten eintragen…",
+    placeholder: "Comparison data…",
   },
   {
     key: "stats",
-    label: "Key Stats / Zahlen",
+    label: "Key Stats / Numbers",
     contentField: "data",
-    placeholder: "Wichtige Zahlen eintragen…",
+    placeholder: "Important numbers or metrics…",
   },
   { key: "faq", label: "FAQ", contentField: null, placeholder: null },
   {
     key: "careers",
-    label: "Karriere / Jobs",
+    label: "Careers / Jobs",
     contentField: "jobs",
-    placeholder: "Offene Stellen, Bezahlung…",
+    placeholder: "Open positions, compensation…",
   },
   {
     key: "locations",
-    label: "Standorte / Filialen",
+    label: "Locations / Branches",
     contentField: "addresses",
-    placeholder: "Adressen der Standorte…",
+    placeholder: "Addresses of your locations…",
   },
   {
     key: "partners",
-    label: "Partner / Logos",
+    label: "Partners / Logos",
     contentField: "names",
-    placeholder: "Partner- und Integrationsnamen…",
+    placeholder: "Partner and integration names…",
   },
 ];
 
@@ -201,7 +202,8 @@ const initialBrief = {
   },
   sections: initialSections,
   contact: {
-    primaryCta: "",
+    primaryCta: "contact",
+    ctaLink: "",
     phone: "",
     email: "",
     address: "",
@@ -656,7 +658,7 @@ function S_Basics({ brief, update }) {
           <Input
             value={b.companyName}
             onChange={set("companyName")}
-            placeholder="z. B. Müller GmbH"
+            placeholder="e.g. Acme Inc."
             autoFocus
           />
         </div>
@@ -682,7 +684,7 @@ function S_Pitch({ brief, update }) {
       stepKey="pitch"
       eyebrow="02 — Pitch"
       title="How would you describe it?"
-      subtitle="Your hero line and the elevator pitch — both optional, but they sharpen the result."
+      subtitle="Your hero line and elevator pitch — they sharpen the result."
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         <div>
@@ -690,15 +692,15 @@ function S_Pitch({ brief, update }) {
           <Input
             value={b.slogan}
             onChange={set("slogan")}
-            placeholder="z. B. Wir bauen Websites, die begeistern."
+            placeholder="e.g. We build websites that inspire."
           />
         </div>
         <div>
-          <FieldLabel optional>Short description</FieldLabel>
+          <FieldLabel>Short description</FieldLabel>
           <Textarea
             value={b.description}
             onChange={set("description")}
-            placeholder="2–3 Sätze: Wer seid ihr? Was macht ihr?"
+            placeholder="2–3 sentences: Who are you? What do you do?"
             rows={4}
           />
         </div>
@@ -749,11 +751,11 @@ function S_Style({ brief, update }) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
-          <FieldLabel optional>Colour palette</FieldLabel>
+          <FieldLabel>Colour palette</FieldLabel>
           <Input
             value={d.colors}
             onChange={set("colors")}
-            placeholder="z. B. Dunkelblau #1a2e5a + Gold #c9a84c"
+            placeholder="e.g. logo colours, accent colour, background colour"
           />
         </div>
         <div>
@@ -886,6 +888,8 @@ function S_Sections({ brief, update }) {
 function S_Goal({ brief, update }) {
   const c = brief.contact;
   const set = (k) => (v) => update("contact", { ...c, [k]: v });
+  const selectedCta = CTAS.find((ct) => ct.value === c.primaryCta);
+  const showLinkField = selectedCta?.hasLink;
   return (
     <Slide
       stepKey="goal"
@@ -893,12 +897,27 @@ function S_Goal({ brief, update }) {
       title="What should visitors do?"
       subtitle="One primary call-to-action drives the whole layout."
     >
-      <ChipPicker
-        value={c.primaryCta}
-        onChange={set("primaryCta")}
-        options={CTAS}
-        columns={2}
-      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        <ChipPicker
+          value={c.primaryCta}
+          onChange={(v) =>
+            update("contact", { ...c, primaryCta: v, ctaLink: "" })
+          }
+          options={CTAS}
+          columns={2}
+        />
+        {showLinkField && (
+          <div>
+            <FieldLabel>Link for "{selectedCta.label}"</FieldLabel>
+            <Input
+              value={c.ctaLink}
+              onChange={set("ctaLink")}
+              placeholder="https://…"
+              type="url"
+            />
+          </div>
+        )}
+      </div>
     </Slide>
   );
 }
@@ -924,20 +943,20 @@ function S_Contact({ brief, update }) {
           />
         </div>
         <div>
-          <FieldLabel optional>E-mail</FieldLabel>
+          <FieldLabel>E-mail</FieldLabel>
           <Input
             value={c.email}
             onChange={set("email")}
-            placeholder="info@firma.de"
+            placeholder="hello@company.com"
             type="email"
           />
         </div>
         <div>
-          <FieldLabel optional>Address</FieldLabel>
+          <FieldLabel>Address</FieldLabel>
           <Input
             value={c.address}
             onChange={set("address")}
-            placeholder="Musterstraße 1, 10115 Berlin"
+            placeholder="123 Main St, New York, NY 10001"
           />
         </div>
       </div>
@@ -977,7 +996,7 @@ function S_Hours({ brief, update }) {
           <Textarea
             value={c.specials}
             onChange={set("specials")}
-            placeholder="z. B. Happy Hour Mo–Do 17–19 Uhr"
+            placeholder="e.g. Happy Hour Mon–Thu 5–7 pm"
             rows={2}
           />
         </div>
@@ -1010,7 +1029,7 @@ function S_Social({ brief, update }) {
             <Input
               value={c.social[key]}
               onChange={setSocial(key)}
-              placeholder={`@${label.toLowerCase()} oder URL`}
+              placeholder={`@${label.toLowerCase()} or URL`}
             />
           </div>
         ))}
@@ -1030,7 +1049,7 @@ function S_Extras({ brief, update }) {
       <Textarea
         value={brief.extras}
         onChange={(v) => update("extras", v)}
-        placeholder="z. B. Speisekarte einfügen, österreichisches Deutsch verwenden, Hero soll wie ein Sonnenaufgang wirken…"
+        placeholder="e.g. Include menu, hero should feel like a sunrise, use formal tone…"
         rows={6}
       />
     </Slide>
@@ -1608,9 +1627,26 @@ export default function Generator() {
   };
 
   const canAdvance = () => {
-    if (step === 0)
-      return brief.basics.companyName.trim() && brief.basics.industry;
-    return true;
+    const b = brief.basics;
+    const d = brief.design;
+    const c = brief.contact;
+    const selectedCta = CTAS.find((ct) => ct.value === c.primaryCta);
+    switch (step) {
+      case 0:
+        return !!(b.companyName.trim() && b.industry);
+      case 1:
+        return !!b.description.trim();
+      case 2:
+        return !!d.designDirection;
+      case 3:
+        return !!d.colors.trim();
+      case 5:
+        return !!(c.primaryCta && (!selectedCta?.hasLink || c.ctaLink.trim()));
+      case 6:
+        return !!(c.email.trim() && c.address.trim());
+      default:
+        return true;
+    }
   };
 
   const isLast = step === SLIDES.length - 1;
@@ -1639,7 +1675,7 @@ export default function Generator() {
       <main
         style={{
           flex: 1,
-          padding: "60px 24px 40px",
+          padding: "140px 24px 40px",
           position: "relative",
           zIndex: 10,
         }}
@@ -1663,7 +1699,7 @@ export default function Generator() {
       </main>
 
       {/* Bottom nav */}
-      {!isLast && (
+      {
         <div
           style={{
             position: "sticky",
@@ -1711,13 +1747,15 @@ export default function Generator() {
               Back
             </button>
 
-            <NextBtn
-              disabled={!canAdvance()}
-              onClick={() => setStep((s) => s + 1)}
-            />
+            {!isLast && (
+              <NextBtn
+                disabled={!canAdvance()}
+                onClick={() => setStep((s) => s + 1)}
+              />
+            )}
           </div>
         </div>
-      )}
+      }
     </div>
   );
 }

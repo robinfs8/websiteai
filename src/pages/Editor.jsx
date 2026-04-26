@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Download,
-  Image as ImageIcon,
   Upload,
   Loader2,
   Check,
@@ -11,8 +10,13 @@ import {
   Trash2,
   Monitor,
   Smartphone,
+  Rocket,
+  ExternalLink,
+  X,
 } from "lucide-react";
 import JSZip from "jszip";
+
+const API_URL = "https://websiteai-backend-production.up.railway.app";
 
 const STORAGE_KEY = "websiteai:sitePackage";
 const EDIT_STATE_KEY = "websiteai:editorState";
@@ -46,17 +50,7 @@ function formatSectionName(prefix) {
   );
 }
 
-function formatFieldLabel(fullKey, groupName) {
-  const suffix =
-    groupName && fullKey.startsWith(groupName + ".")
-      ? fullKey.slice(groupName.length + 1)
-      : fullKey;
-  const last = suffix.split(".").slice(-1)[0] || suffix;
-  return last
-    .replace(/([a-zA-Z])(\d+)/g, "$1 $2")
-    .replace(/^./, (c) => c.toUpperCase())
-    .trim();
-}
+
 
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -304,100 +298,83 @@ function dataUrlToBytes(dataUrl) {
 
 // ─── UI components ────────────────────────────────────────────────────────────
 
-function GroupHeader({ name }) {
+function GroupHeader({ name, isFirst }) {
   return (
     <div
       style={{
-        marginTop: 28,
-        marginBottom: 14,
-        paddingBottom: 10,
-        borderBottom: `1px solid ${HAIR}`,
+        marginTop: isFirst ? 0 : 24,
+        marginBottom: 10,
+        paddingBottom: 8,
       }}
     >
-      <h3
+      <span
         style={{
-          margin: 0,
-          fontSize: 17,
-          fontFamily: FONT_DISPLAY,
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          color: INK,
+          fontSize: 11,
+          fontFamily: FONT_BODY,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: MUTED,
         }}
       >
         {formatSectionName(name)}
-      </h3>
+      </span>
     </div>
   );
 }
 
-function TextSlotField({ slot, value, onChange, groupName }) {
-  const label = formatFieldLabel(slot.key, groupName);
-  const isLong = (value ?? "").length > 80 || (value ?? "").includes("\n");
-  const inputStyle = {
-    width: "100%",
-    background: "#fff",
-    border: `1px solid ${HAIR}`,
-    borderRadius: 12,
-    padding: "11px 14px",
-    fontSize: 14,
-    color: INK,
-    fontFamily: FONT_BODY,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s, box-shadow 0.2s",
-  };
+function AutoGrowTextarea({ value, onChange }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = "0px";
+      ref.current.style.height = ref.current.scrollHeight + "px";
+    }
+  }, [value]);
   return (
-    <div style={{ marginBottom: 12 }}>
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          fontWeight: 500,
-          color: MUTED,
-          marginBottom: 6,
-          fontFamily: FONT_BODY,
-        }}
-      >
-        {label}
-      </label>
-      {isLong ? (
-        <textarea
-          rows={Math.min(6, Math.max(2, Math.ceil((value ?? "").length / 60)))}
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ ...inputStyle, resize: "none", lineHeight: 1.5 }}
-          onFocus={(e) => {
-            e.target.style.borderColor = ACCENT;
-            e.target.style.boxShadow = `0 0 0 3px rgba(73,79,223,0.10)`;
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = HAIR;
-            e.target.style.boxShadow = "none";
-          }}
-        />
-      ) : (
-        <input
-          type="text"
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          style={inputStyle}
-          onFocus={(e) => {
-            e.target.style.borderColor = ACCENT;
-            e.target.style.boxShadow = `0 0 0 3px rgba(73,79,223,0.10)`;
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = HAIR;
-            e.target.style.boxShadow = "none";
-          }}
-        />
-      )}
+    <textarea
+      ref={ref}
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      rows={1}
+      style={{
+        width: "100%",
+        background: SOFT,
+        border: `1.5px solid transparent`,
+        borderRadius: 10,
+        padding: "9px 12px",
+        fontSize: 13,
+        color: INK,
+        fontFamily: FONT_BODY,
+        outline: "none",
+        boxSizing: "border-box",
+        resize: "none",
+        overflow: "hidden",
+        lineHeight: 1.55,
+        transition: "border-color 0.2s, background 0.2s",
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = ACCENT;
+        e.target.style.background = "#fff";
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = "transparent";
+        e.target.style.background = SOFT;
+      }}
+    />
+  );
+}
+
+function TextSlotField({ slot, value, onChange }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <AutoGrowTextarea value={value} onChange={onChange} />
     </div>
   );
 }
 
-function ImageSlotCard({ slot, asset, onUpload, onClear, groupName }) {
+function ImageSlotCard({ slot, asset, onUpload, onClear }) {
   const inputRef = useRef(null);
-  const label = formatFieldLabel(slot.key, groupName);
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -406,49 +383,15 @@ function ImageSlotCard({ slot, asset, onUpload, onClear, groupName }) {
   };
 
   return (
-    <div style={{ marginBottom: 12 }}>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          fontSize: 12,
-          fontWeight: 500,
-          color: MUTED,
-          marginBottom: 6,
-          fontFamily: FONT_BODY,
-        }}
-      >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <ImageIcon size={12} /> {label}
-        </span>
-        {asset && (
-          <button
-            onClick={onClear}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#a3a9b3",
-              padding: 0,
-              display: "flex",
-            }}
-            title="Remove image"
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
-      </label>
-
+    <div style={{ marginBottom: 6 }}>
       {asset?.dataUrl ? (
         <div
           style={{
             position: "relative",
-            borderRadius: 12,
+            borderRadius: 10,
             overflow: "hidden",
             aspectRatio: "16/9",
             background: SOFT,
-            border: `1px solid ${HAIR}`,
           }}
         >
           <img
@@ -456,42 +399,68 @@ function ImageSlotCard({ slot, asset, onUpload, onClear, groupName }) {
             alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-          <button
-            onClick={() => inputRef.current?.click()}
+          <div
             style={{
               position: "absolute",
-              bottom: 8,
-              right: 8,
-              padding: "6px 12px",
-              fontSize: 12,
-              fontFamily: FONT_BODY,
-              fontWeight: 600,
-              color: "#fff",
-              background: "rgba(15,17,21,0.7)",
-              backdropFilter: "blur(8px)",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
+              bottom: 6,
+              right: 6,
+              display: "flex",
+              gap: 4,
             }}
           >
-            Replace
-          </button>
+            <button
+              onClick={() => inputRef.current?.click()}
+              style={{
+                padding: "5px 10px",
+                fontSize: 11,
+                fontFamily: FONT_BODY,
+                fontWeight: 600,
+                color: "#fff",
+                background: "rgba(15,17,21,0.65)",
+                backdropFilter: "blur(8px)",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              Replace
+            </button>
+            <button
+              onClick={onClear}
+              style={{
+                padding: "5px 8px",
+                fontSize: 11,
+                fontFamily: FONT_BODY,
+                color: "#fff",
+                background: "rgba(15,17,21,0.65)",
+                backdropFilter: "blur(8px)",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Remove image"
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
         </div>
       ) : (
         <button
           onClick={() => inputRef.current?.click()}
           style={{
             width: "100%",
-            aspectRatio: "16/9",
+            padding: "18px 0",
             background: SOFT,
             border: `1.5px dashed ${HAIR}`,
-            borderRadius: 12,
+            borderRadius: 10,
             cursor: "pointer",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 6,
+            gap: 4,
             color: "#a3a9b3",
             transition: "border-color 0.2s, color 0.2s, background 0.2s",
             fontFamily: FONT_BODY,
@@ -499,7 +468,7 @@ function ImageSlotCard({ slot, asset, onUpload, onClear, groupName }) {
           onMouseEnter={(e) => {
             e.currentTarget.style.borderColor = ACCENT;
             e.currentTarget.style.color = ACCENT;
-            e.currentTarget.style.background = "rgba(73,79,223,0.04)";
+            e.currentTarget.style.background = "rgba(73,79,223,0.03)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = HAIR;
@@ -507,8 +476,8 @@ function ImageSlotCard({ slot, asset, onUpload, onClear, groupName }) {
             e.currentTarget.style.background = SOFT;
           }}
         >
-          <Upload size={16} />
-          <span style={{ fontSize: 12, fontWeight: 500 }}>Upload image</span>
+          <Upload size={14} />
+          <span style={{ fontSize: 11, fontWeight: 500 }}>Upload image</span>
         </button>
       )}
 
@@ -539,6 +508,9 @@ export default function Editor() {
   const [previewMode, setPreviewMode] = useState("desktop");
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployResult, setDeployResult] = useState(null);
+  const [deployError, setDeployError] = useState("");
   const [frameKey, setFrameKey] = useState(0);
   const [importError, setImportError] = useState("");
 
@@ -752,23 +724,25 @@ export default function Editor() {
     return renderPage(html, slots, assets, "preview");
   }, [pkg, activePage, slots, assets]);
 
+  const buildZipBlob = async () => {
+    const zip = new JSZip();
+    Object.entries(pkg.pages).forEach(([name, html]) => {
+      zip.file(name, renderPage(html, slots, assets, "export"));
+    });
+    const assetsFolder = zip.folder("assets");
+    Object.entries(assets).forEach(([name, asset]) => {
+      if (!asset?.dataUrl) return;
+      assetsFolder.file(name, dataUrlToBytes(asset.dataUrl), { binary: true });
+    });
+    return zip.generateAsync({ type: "blob" });
+  };
+
   const downloadZip = async () => {
     if (!pkg) return;
     setDownloading(true);
     setDownloaded(false);
     try {
-      const zip = new JSZip();
-      Object.entries(pkg.pages).forEach(([name, html]) => {
-        zip.file(name, renderPage(html, slots, assets, "export"));
-      });
-      const assetsFolder = zip.folder("assets");
-      Object.entries(assets).forEach(([name, asset]) => {
-        if (!asset?.dataUrl) return;
-        assetsFolder.file(name, dataUrlToBytes(asset.dataUrl), {
-          binary: true,
-        });
-      });
-      const blob = await zip.generateAsync({ type: "blob" });
+      const blob = await buildZipBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -783,6 +757,32 @@ export default function Editor() {
       console.error("Download failed", err);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const deployToNetlify = async () => {
+    if (!pkg || deploying) return;
+    setDeploying(true);
+    setDeployError("");
+    setDeployResult(null);
+    try {
+      const blob = await buildZipBlob();
+      const res = await fetch(`${API_URL}/deploy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/zip" },
+        body: blob,
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(json?.error || `Deploy failed (${res.status})`);
+      }
+      if (!json?.url) throw new Error("Deploy succeeded but no URL returned");
+      setDeployResult(json);
+    } catch (err) {
+      console.error("Deploy failed", err);
+      setDeployError(err.message || "Deploy failed");
+    } finally {
+      setDeploying(false);
     }
   };
 
@@ -1202,7 +1202,45 @@ export default function Editor() {
             )}
           </div>
 
-          {/* Right: download */}
+          {/* Right: deploy + download */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={deployToNetlify}
+            disabled={deploying}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              background: "#fff",
+              color: deploying ? MUTED : INK,
+              border: `1px solid ${HAIR}`,
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT_BODY,
+              cursor: deploying ? "not-allowed" : "pointer",
+              opacity: deploying ? 0.7 : 1,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (deploying) return;
+              e.currentTarget.style.borderColor = ACCENT;
+              e.currentTarget.style.color = ACCENT;
+            }}
+            onMouseLeave={(e) => {
+              if (deploying) return;
+              e.currentTarget.style.borderColor = HAIR;
+              e.currentTarget.style.color = INK;
+            }}
+          >
+            {deploying ? (
+              <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+            ) : (
+              <Rocket size={14} />
+            )}
+            {deploying ? "Deploying…" : "Deploy"}
+          </button>
           <button
             onClick={downloadZip}
             disabled={downloading}
@@ -1243,6 +1281,7 @@ export default function Editor() {
               ? "Downloaded"
               : "Download"}
           </button>
+          </div>
         </div>
       </header>
 
@@ -1250,53 +1289,22 @@ export default function Editor() {
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside
           style={{
-            width: 340,
+            width: "clamp(280px, 22vw, 380px)",
             flexShrink: 0,
             background: "#fff",
             borderRight: `1px solid ${HAIR}`,
             overflowY: "auto",
           }}
         >
-          <div style={{ padding: "20px 22px 40px" }}>
-            <div style={{ marginBottom: 4 }}>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  fontFamily: FONT_BODY,
-                  fontWeight: 500,
-                  color: MUTED,
-                }}
-              >
-                Content
-              </h2>
-            </div>
+          <div style={{ padding: "18px 16px 40px" }}>
             {groupedSections.map((section, idx) => (
               <div key={section.name}>
-                {idx === 0 ? (
-                  <div style={{ marginTop: 14, marginBottom: 14 }}>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: 17,
-                        fontFamily: FONT_DISPLAY,
-                        fontWeight: 700,
-                        letterSpacing: "-0.02em",
-                        color: INK,
-                      }}
-                    >
-                      {formatSectionName(section.name)}
-                    </h3>
-                  </div>
-                ) : (
-                  <GroupHeader name={section.name} />
-                )}
+                <GroupHeader name={section.name} isFirst={idx === 0} />
                 {section.imageItems.map(({ slot, assetName, asset }) => (
                   <ImageSlotCard
                     key={slot.key}
                     slot={slot}
                     asset={asset}
-                    groupName={section.name}
                     onUpload={handleImageUpload(slot, assetName)}
                     onClear={handleImageClear(assetName)}
                   />
@@ -1305,7 +1313,6 @@ export default function Editor() {
                   <TextSlotField
                     key={slot.key}
                     slot={slot}
-                    groupName={section.name}
                     value={slots[slot.key] ?? slot.defaultText}
                     onChange={handleSlotChange(slot.key)}
                   />
@@ -1477,6 +1484,96 @@ export default function Editor() {
           </div>
         </main>
       </div>
+
+      {(deployResult || deployError) && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            maxWidth: 380,
+            background: "#fff",
+            border: `1px solid ${HAIR}`,
+            borderRadius: 14,
+            boxShadow: "0 24px 60px rgba(15,17,21,0.14)",
+            padding: "16px 18px",
+            zIndex: 50,
+            fontFamily: FONT_BODY,
+          }}
+        >
+          <button
+            onClick={() => {
+              setDeployResult(null);
+              setDeployError("");
+            }}
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: MUTED,
+              padding: 4,
+              display: "inline-flex",
+            }}
+            aria-label="Close"
+          >
+            <X size={14} />
+          </button>
+          {deployResult ? (
+            <>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: INK,
+                  marginBottom: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Check size={14} color={ACCENT} />
+                Deployed to Netlify
+              </div>
+              <a
+                href={deployResult.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 13,
+                  color: ACCENT,
+                  textDecoration: "none",
+                  wordBreak: "break-all",
+                }}
+              >
+                {deployResult.url}
+                <ExternalLink size={12} />
+              </a>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#b91c1c",
+                  marginBottom: 4,
+                }}
+              >
+                Deploy failed
+              </div>
+              <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+                {deployError}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
