@@ -62,6 +62,25 @@ import {
 
 const REQUIRED = ["basics.companyName", "basics.industry"];
 
+// Character limits for every user-supplied text field.
+// Must stay in sync with LIMITS in Generator.jsx on the frontend.
+export const FIELD_LIMITS = {
+  companyName:      50,
+  slogan:          100,
+  description:    1000,
+  colors:          100,
+  ctaLink:         100,
+  phone:            50,
+  email:            50,
+  address:          50,
+  openingHours:     50,
+  furtherLinks:    600,
+  specials:        400,
+  social:          100,
+  sectionContent: 1500,
+  extras:         1000,
+};
+
 const ALLOWED_INDUSTRIES = new Set([
   // Current frontend v2 industries
   "tech",
@@ -114,6 +133,48 @@ const INDUSTRY_SPECIFIC_MAP = {
 };
 
 // ─── VALIDATION ───────────────────────────────────────────────────────────────
+
+export function validateInputLimits(brief) {
+  const L = FIELD_LIMITS;
+  const check = (label, val, limit) => {
+    if (typeof val === "string" && val.length > limit)
+      throw new Error(`"${label}" exceeds the ${limit}-character limit`);
+  };
+
+  const b = brief.basics ?? {};
+  check("Company name",    b.companyName,  L.companyName);
+  check("Slogan",          b.slogan,       L.slogan);
+  check("Description",     b.description,  L.description);
+
+  const d = brief.design ?? {};
+  check("Colour palette",  d.colors,       L.colors);
+
+  const c = brief.contact ?? {};
+  check("CTA link",        c.ctaLink,      L.ctaLink);
+  check("Phone",           c.phone,        L.phone);
+  check("Email",           c.email,        L.email);
+  check("Address",         c.address,      L.address);
+  check("Opening hours",   c.openingHours, L.openingHours);
+  check("Booking link",    c.furtherLinks, L.furtherLinks);
+  check("Specials",        c.specials,     L.specials);
+
+  if (c.social && typeof c.social === "object") {
+    for (const [platform, val] of Object.entries(c.social))
+      check(`Social — ${platform}`, val, L.social);
+  }
+
+  if (brief.sections && typeof brief.sections === "object") {
+    for (const [key, section] of Object.entries(brief.sections)) {
+      if (!ALLOWED_SECTIONS.has(key) || typeof section !== "object") continue;
+      for (const [field, val] of Object.entries(section)) {
+        if (field === "enabled") continue;
+        check(`Section "${key}" — ${field}`, val, L.sectionContent);
+      }
+    }
+  }
+
+  check("Additional notes", brief.extras, L.extras);
+}
 
 export function validateBrief(brief) {
   if (!brief || typeof brief !== "object")

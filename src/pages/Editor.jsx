@@ -214,7 +214,7 @@ function indexPackage(pkg) {
   };
 }
 
-function renderPage(html, slots, assets, mode) {
+function renderPage(html, slots, assets, mode, mobileViewport = false) {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   doc.querySelectorAll("[data-slot]").forEach((el) => {
@@ -277,6 +277,20 @@ function renderPage(html, slots, assets, mode) {
       img.setAttribute("src", `assets/${name}`);
     }
   });
+
+  // Override viewport for mobile preview so responsive breakpoints and
+  // viewport-relative units (vw, clamp) behave as if on a real 360px phone.
+  // Without this, device-width inside an iframe resolves to the host screen
+  // width, so Tailwind's md: breakpoints never fire.
+  if (mode === "preview" && mobileViewport && doc.head) {
+    let meta = doc.head.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = doc.createElement("meta");
+      meta.setAttribute("name", "viewport");
+      doc.head.prepend(meta);
+    }
+    meta.setAttribute("content", "width=390, initial-scale=1");
+  }
 
   if (mode === "preview" && doc.body) {
     const s = doc.createElement("script");
@@ -696,6 +710,18 @@ export default function Editor() {
     }
   }, [pkg, slots, assets]);
 
+  // Persist AI-edited pages (pkg.pages changes from submitAiEdit).
+  // Slots are already persisted above via EDIT_STATE_KEY; this covers the
+  // HTML structure which lives in pkg and would otherwise be lost on refresh.
+  useEffect(() => {
+    if (!pkg) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pkg));
+    } catch {
+      /* ignore quota — slots are still saved separately */
+    }
+  }, [pkg]);
+
   const index = useMemo(() => (pkg ? indexPackage(pkg) : null), [pkg]);
 
   const imageSlotEntries = useMemo(() => {
@@ -791,8 +817,8 @@ export default function Editor() {
     if (!pkg || !activePage) return "";
     const html = pkg.pages[activePage];
     if (!html) return "";
-    return renderPage(html, slots, assets, "preview");
-  }, [pkg, activePage, slots, assets]);
+    return renderPage(html, slots, assets, "preview", previewMode === "mobile");
+  }, [pkg, activePage, slots, assets, previewMode]);
 
   const buildZipBlob = async () => {
     const zip = new JSZip();
@@ -1287,10 +1313,9 @@ export default function Editor() {
               flex: 1,
               overflow: "auto",
               display: "flex",
-              alignItems:
-                previewMode === "mobile" ? "flex-start" : "stretch",
+              alignItems: "stretch",
               justifyContent: "center",
-              padding: previewMode === "mobile" ? "28px 24px" : "16px",
+              padding: "16px",
             }}
           >
             {previewMode === "desktop" ? (
@@ -1388,49 +1413,64 @@ export default function Editor() {
                 />
               </div>
             ) : (
+              // True mobile preview: iframe rendered at 390 px (iPhone width).
+              // The viewport meta is set to width=390 so Tailwind breakpoints,
+              // clamp() typography, and all responsive CSS fire correctly.
+              // Displayed full-height so content is readable — no tiny phone shell.
               <div
                 style={{
-                  background: "#0f1115",
-                  borderRadius: 44,
-                  padding: 8,
-                  boxShadow:
-                    "0 30px 80px rgba(15,17,21,0.25), 0 8px 24px rgba(15,17,21,0.10), inset 0 0 0 1px rgba(255,255,255,0.06)",
-                  position: "relative",
                   flexShrink: 0,
+                  width: 390,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  boxShadow:
+                    "0 20px 60px rgba(15,17,21,0.10), 0 2px 8px rgba(15,17,21,0.06)",
+                  border: `1px solid ${HAIR}`,
+                  background: "#fff",
                 }}
               >
+                {/* Minimal device indicator */}
                 <div
                   style={{
-                    position: "absolute",
-                    top: 18,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 96,
+                    background: SOFT,
+                    borderBottom: `1px solid ${HAIR}`,
                     height: 28,
-                    background: "#0f1115",
-                    borderRadius: 20,
-                    zIndex: 2,
-                  }}
-                />
-                <div
-                  style={{
-                    width: 360,
-                    height: 740,
-                    borderRadius: 36,
-                    overflow: "hidden",
-                    background: "#fff",
-                    position: "relative",
-                    zIndex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    gap: 8,
                   }}
                 >
-                  <iframe
-                    key={frameKey}
-                    title="Preview mobile"
-                    srcDoc={previewHtml}
-                    sandbox="allow-scripts allow-forms"
-                    style={{ width: "100%", height: "100%", border: 0 }}
+                  <div
+                    style={{
+                      width: 48,
+                      height: 4,
+                      borderRadius: 2,
+                      background: "#d0d4db",
+                    }}
                   />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontFamily: FONT_BODY,
+                      color: MUTED,
+                      fontWeight: 500,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    390 px
+                  </span>
                 </div>
+                <iframe
+                  key={`${frameKey}-mobile`}
+                  title="Preview mobile"
+                  srcDoc={previewHtml}
+                  sandbox="allow-scripts allow-forms"
+                  style={{ flex: 1, border: 0, minHeight: 700 }}
+                />
               </div>
             )}
           </div>

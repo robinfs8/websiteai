@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import cors from "cors";
 import { runPipeline } from "./lib/pipeline.js";
-import { buildPrompt, validateBrief } from "./lib/prompt-builder.js";
+import { buildPrompt, validateBrief, validateInputLimits } from "./lib/prompt-builder.js";
 import { verifyIdToken, consumeCredit, refundCredit, adminDb } from "./lib/auth.js";
 import { extractJson } from "./lib/extract.js";
 import { GoogleGenAI } from "@google/genai";
@@ -51,9 +51,19 @@ app.post("/generate", verifyIdToken, async (req, res) => {
   let userPrompt;
   try {
     if (brief) {
+      // 1. Valid JSON structure + required fields
       validateBrief(brief);
+      // 2. Per-field character limits (no token abuse)
+      validateInputLimits(brief);
+      // 3. Belt-and-suspenders: total brief payload size
+      if (JSON.stringify(brief).length > 20_000) {
+        return res.status(400).json({ error: "brief payload too large", requestId: rid });
+      }
       userPrompt = buildPrompt(brief);
     } else if (typeof prompt === "string" && prompt.trim().length >= 3) {
+      if (prompt.length > 5_000) {
+        return res.status(400).json({ error: "prompt exceeds 5000-character limit", requestId: rid });
+      }
       userPrompt = prompt;
     } else {
       return res.status(400).json({

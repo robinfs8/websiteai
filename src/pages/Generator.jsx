@@ -184,6 +184,24 @@ const SOCIAL_FIELDS = [
   { key: "youtube", label: "YouTube" },
 ];
 
+// Character limits — must match FIELD_LIMITS in landing-generator/lib/prompt-builder.js
+const LIMITS = {
+  companyName:     50,
+  slogan:         100,
+  description:    1000,
+  colors:         100,
+  ctaLink:        100,
+  phone:           50,
+  email:          50,
+  address:        50,
+  openingHours:   50,
+  furtherLinks:   600,
+  specials:       400,
+  social:         100,
+  sectionContent: 1500,
+  extras:        1000,
+};
+
 // ─── Initial state ────────────────────────────────────────────────────────────
 
 const initialSections = Object.fromEntries(
@@ -323,80 +341,123 @@ function Input({
   placeholder,
   type = "text",
   autoFocus = false,
+  maxLength,
 }) {
+  const atLimit  = maxLength && value.length >= maxLength;
+  const nearLimit = maxLength && value.length >= Math.floor(maxLength * 0.9);
   return (
-    <input
-      autoFocus={autoFocus}
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="gen-input"
-      style={{
-        width: "100%",
-        background: "rgba(255,255,255,0.8)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        border: `1px solid ${HAIR}`,
-        borderRadius: 16,
-        padding: "16px 18px",
-        fontSize: 17,
-        fontFamily: FONT_BODY,
-        color: INK,
-        outline: "none",
-        transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
-        boxShadow: "0 1px 2px rgba(15,17,21,0.02)",
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = ACCENT;
-        e.target.style.boxShadow = `0 0 0 4px rgba(73,79,223,0.10)`;
-        e.target.style.background = "rgba(255,255,255,0.95)";
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = HAIR;
-        e.target.style.boxShadow = "0 1px 2px rgba(15,17,21,0.02)";
-        e.target.style.background = "rgba(255,255,255,0.8)";
-      }}
-    />
+    <>
+      <input
+        autoFocus={autoFocus}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className="gen-input"
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.8)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: atLimit ? "1.5px solid #dc2626" : `1px solid ${HAIR}`,
+          borderRadius: 16,
+          padding: "16px 18px",
+          fontSize: 17,
+          fontFamily: FONT_BODY,
+          color: INK,
+          outline: "none",
+          transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+          boxShadow: "0 1px 2px rgba(15,17,21,0.02)",
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = atLimit ? "#dc2626" : ACCENT;
+          e.target.style.boxShadow = atLimit
+            ? "0 0 0 4px rgba(220,38,38,0.10)"
+            : `0 0 0 4px rgba(73,79,223,0.10)`;
+          e.target.style.background = "rgba(255,255,255,0.95)";
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = atLimit ? "#dc2626" : HAIR;
+          e.target.style.boxShadow = "0 1px 2px rgba(15,17,21,0.02)";
+          e.target.style.background = "rgba(255,255,255,0.8)";
+        }}
+      />
+      {maxLength && value.length > 0 && (
+        <div
+          style={{
+            fontSize: 11,
+            textAlign: "right",
+            marginTop: 4,
+            fontFamily: FONT_BODY,
+            color: atLimit ? "#dc2626" : nearLimit ? "#d97706" : "#c8ccd4",
+            fontWeight: atLimit ? 600 : 400,
+          }}
+        >
+          {value.length} / {maxLength}
+        </div>
+      )}
+    </>
   );
 }
 
-function Textarea({ value, onChange, placeholder, rows = 4 }) {
+function Textarea({ value, onChange, placeholder, rows = 4, maxLength }) {
+  const atLimit   = maxLength && value.length >= maxLength;
+  const nearLimit = maxLength && value.length >= Math.floor(maxLength * 0.9);
   return (
-    <textarea
-      rows={rows}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="gen-input"
-      style={{
-        width: "100%",
-        background: "rgba(255,255,255,0.8)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        border: `1px solid ${HAIR}`,
-        borderRadius: 16,
-        padding: "16px 18px",
-        fontSize: 16,
-        lineHeight: 1.55,
-        fontFamily: FONT_BODY,
-        color: INK,
-        outline: "none",
-        resize: "none",
-        transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
-        boxShadow: "0 1px 2px rgba(15,17,21,0.02)",
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = ACCENT;
-        e.target.style.boxShadow = `0 0 0 4px rgba(73,79,223,0.10)`;
-        e.target.style.background = "rgba(255,255,255,0.95)";
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = HAIR;
-        e.target.style.boxShadow = "0 1px 2px rgba(15,17,21,0.02)";
-        e.target.style.background = "rgba(255,255,255,0.8)";
-      }}
-    />
+    <>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className="gen-input"
+        style={{
+          width: "100%",
+          background: "rgba(255,255,255,0.8)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: atLimit ? "1.5px solid #dc2626" : `1px solid ${HAIR}`,
+          borderRadius: 16,
+          padding: "16px 18px",
+          fontSize: 16,
+          lineHeight: 1.55,
+          fontFamily: FONT_BODY,
+          color: INK,
+          outline: "none",
+          resize: "none",
+          transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+          boxShadow: "0 1px 2px rgba(15,17,21,0.02)",
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = atLimit ? "#dc2626" : ACCENT;
+          e.target.style.boxShadow = atLimit
+            ? "0 0 0 4px rgba(220,38,38,0.10)"
+            : `0 0 0 4px rgba(73,79,223,0.10)`;
+          e.target.style.background = "rgba(255,255,255,0.95)";
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = atLimit ? "#dc2626" : HAIR;
+          e.target.style.boxShadow = "0 1px 2px rgba(15,17,21,0.02)";
+          e.target.style.background = "rgba(255,255,255,0.8)";
+        }}
+      />
+      {maxLength && value.length > 0 && (
+        <div
+          style={{
+            fontSize: 11,
+            textAlign: "right",
+            marginTop: 4,
+            fontFamily: FONT_BODY,
+            color: atLimit ? "#dc2626" : nearLimit ? "#d97706" : "#c8ccd4",
+            fontWeight: atLimit ? 600 : 400,
+          }}
+        >
+          {value.length} / {maxLength}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -663,6 +724,7 @@ function S_Basics({ brief, update }) {
             onChange={set("companyName")}
             placeholder="e.g. Acme Inc."
             autoFocus
+            maxLength={LIMITS.companyName}
           />
         </div>
         <div>
@@ -696,6 +758,7 @@ function S_Pitch({ brief, update }) {
             value={b.slogan}
             onChange={set("slogan")}
             placeholder="e.g. We build websites that inspire."
+            maxLength={LIMITS.slogan}
           />
         </div>
         <div>
@@ -705,6 +768,7 @@ function S_Pitch({ brief, update }) {
             onChange={set("description")}
             placeholder="2–3 sentences: Who are you? What do you do?"
             rows={4}
+            maxLength={LIMITS.description}
           />
         </div>
       </div>
@@ -759,6 +823,7 @@ function S_Style({ brief, update }) {
             value={d.colors}
             onChange={set("colors")}
             placeholder="e.g. logo colours, accent colour, background colour"
+            maxLength={LIMITS.colors}
           />
         </div>
         <div>
@@ -879,6 +944,7 @@ function S_Sections({ brief, update }) {
                 onChange={setSectionContent(key, contentField)}
                 placeholder={placeholder}
                 rows={3}
+                maxLength={LIMITS.sectionContent}
               />
             </div>
           ))}
@@ -917,6 +983,7 @@ function S_Goal({ brief, update }) {
               onChange={set("ctaLink")}
               placeholder="https://…"
               type="url"
+              maxLength={LIMITS.ctaLink}
             />
           </div>
         )}
@@ -943,6 +1010,7 @@ function S_Contact({ brief, update }) {
             onChange={set("phone")}
             placeholder="+49 30 123456"
             type="tel"
+            maxLength={LIMITS.phone}
           />
         </div>
         <div>
@@ -952,6 +1020,7 @@ function S_Contact({ brief, update }) {
             onChange={set("email")}
             placeholder="hello@company.com"
             type="email"
+            maxLength={LIMITS.email}
           />
         </div>
         <div>
@@ -960,6 +1029,7 @@ function S_Contact({ brief, update }) {
             value={c.address}
             onChange={set("address")}
             placeholder="123 Main St, New York, NY 10001"
+            maxLength={LIMITS.address}
           />
         </div>
       </div>
@@ -984,6 +1054,7 @@ function S_Hours({ brief, update }) {
             value={c.openingHours}
             onChange={set("openingHours")}
             placeholder="Mo–Fr 9–18, Sa 10–14"
+            maxLength={LIMITS.openingHours}
           />
         </div>
         <div>
@@ -992,6 +1063,7 @@ function S_Hours({ brief, update }) {
             value={c.furtherLinks}
             onChange={set("furtherLinks")}
             placeholder="https://calendly.com/…"
+            maxLength={LIMITS.furtherLinks}
           />
         </div>
         <div>
@@ -1001,6 +1073,7 @@ function S_Hours({ brief, update }) {
             onChange={set("specials")}
             placeholder="e.g. Happy Hour Mon–Thu 5–7 pm"
             rows={2}
+            maxLength={LIMITS.specials}
           />
         </div>
       </div>
@@ -1033,6 +1106,7 @@ function S_Social({ brief, update }) {
               value={c.social[key]}
               onChange={setSocial(key)}
               placeholder={`@${label.toLowerCase()} or URL`}
+              maxLength={LIMITS.social}
             />
           </div>
         ))}
@@ -1054,6 +1128,7 @@ function S_Extras({ brief, update }) {
         onChange={(v) => update("extras", v)}
         placeholder="e.g. Include menu, hero should feel like a sunrise, use formal tone…"
         rows={6}
+        maxLength={LIMITS.extras}
       />
     </Slide>
   );
